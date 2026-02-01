@@ -39,7 +39,7 @@
             background-color: #222; color: #555;
             display: flex; justify-content: center; align-items: center;
             font-size: 0.6rem; text-align: center;
-            border-bottom: 2px solid var(--gold); /* Blended border */
+            border-bottom: 2px solid var(--gold); 
             position: absolute; top: 0; z-index: 2000;
             overflow: hidden;
         }
@@ -52,14 +52,13 @@
             position: absolute; bottom: 0; z-index: 2000;
         }
 
-        /* --- GLOBAL UI ELEMENTS (BLENDED STYLE) --- */
+        /* --- GLOBAL UI ELEMENTS --- */
         button {
             padding: 15px 30px;
             font-family: var(--pixel-font);
             font-size: 0.8rem;
             background-color: var(--ninja-navy);
             color: var(--white);
-            /* New Blended Style */
             border: 3px solid var(--gold); 
             box-shadow: 3px 3px 0px var(--ninja-dark-bg); 
             cursor: pointer; transition: all 0.1s;
@@ -67,7 +66,6 @@
         }
         button:hover { 
             background-color: #3a4ba0; 
-            /* Pop on hover */
             border-color: var(--white); 
             box-shadow: 3px 3px 0px var(--white); 
             transform: translate(-1px, -1px); 
@@ -80,7 +78,6 @@
             font-family: var(--pixel-font);
             background: var(--ninja-dark-bg);
             color: var(--white);
-            /* Consistent Blended Border */
             border: 3px solid var(--gold);
             margin-bottom: 10px; width: 450px; 
             text-align: center; outline: none;
@@ -98,6 +95,8 @@
             margin-top: 100px; 
             text-align: center;
             background-color: rgba(0, 0, 0, 0.5);
+            /* Added padding for spacing */
+            padding-top: 20px; 
         }
         #game-container, #results-screen { 
             display: none; flex-direction: column;
@@ -113,27 +112,22 @@
             font-size: 0.6rem; padding: 10px; 
             width: 160px; text-align: center;
             background-color: var(--ninja-navy);
-            /* Consistent Blended Border */
             border: 3px solid var(--gold);
         }
         #leaderboard-toggle-btn { left: 20px; }
         #store-toggle-btn { left: 200px; }
-        #calibrate-toggle-btn { right: 20px; width: 220px; }
         
-        #calibrate-toggle-btn.active { background-color: var(--red); border-color: var(--white); animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        /* MOVED BRIEFING BUTTON TO TOP RIGHT */
+        #briefingBtn { right: 20px; width: 220px; }
 
         /* --- UI CARDS --- */
         .ui-card {
             background: var(--ninja-navy);
-            /* Consistent Blended Border */
             border: 4px solid var(--gold);
             box-shadow: inset 0 0 0 2px var(--ninja-dark-bg), 4px 4px 0 var(--ninja-dark-bg);
             padding: 30px; width: 80%; max-width: 700px;
             text-align: center; max-height: 80vh; overflow-y: auto;
         }
-
-        /* Transparent result box */
         #results-screen .ui-card {
             background-color: rgba(42, 59, 144, 0.85);
         }
@@ -142,7 +136,7 @@
         .logo-box {
             background: transparent; border: none; box-shadow: none; padding: 0; 
             width: 100%; max-width: 850px; 
-            margin-bottom: 0px; margin-top: -20px; 
+            margin-bottom: 20px; margin-top: -20px; 
             box-sizing: border-box; display: flex; flex-direction: column;
             justify-content: center; align-items: center;
         }
@@ -261,32 +255,37 @@
         #finishBtn { display: none; background-color: var(--green); border-color: var(--gold); }
         #abortBtn { background-color: var(--red); border-color: var(--gold); font-size: 0.7rem; padding: 10px 20px; }
         #abortBtn:hover { border-color: var(--white); background-color: #d32f2f; }
+        
+        /* NEW BUTTON STYLE FOR CALIBRATE MAIN */
+        #calibrate-btn-main {
+            width: 450px; 
+            margin-bottom: 10px; 
+            background-color: var(--ninja-navy);
+            border: 3px solid var(--gold);
+            font-size: 0.7rem;
+            padding: 10px;
+        }
+        #calibrate-btn-main.active { background-color: var(--red); border-color: var(--white); animation: pulse 1s infinite; }
+
 
         .gold-heading { color: var(--gold); text-shadow: 3px 3px #000; margin-bottom: 30px; }
         #store-overlay .gold-heading { font-size: 2.5rem; }
 
-        /* --- NINJA MASCOT (SIZE FIXED) --- */
+        /* --- NINJA MASCOT --- */
         #ninja-mascot { 
             position: fixed; bottom: 80px; left: 30px; 
             width: 300px; 
             image-rendering: pixelated; z-index: 100;
-            /* UPDATED: Restored the SLOW STEPPED OPACITY transition for Ninja 3 */
             transition: opacity 1.5s steps(10, end), transform 1.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
         }
-        /* Disappear instead of move down */
-        .ninja-hidden { 
-            opacity: 0; 
-            pointer-events: none;
-        }
+        .ninja-hidden { opacity: 0; pointer-events: none; }
 
         /* --- PIXEL ICONS --- */
         .pixel-icon { display: inline-block; width: 22px; height: 20px; margin-right: 25px; position: relative; }
         
-        /* Solid Red Heart - No Line/Glint */
         .pixel-heart {
             width: 3px; height: 3px; background-color: transparent;
-            box-shadow: 
-                3px 0 var(--red), 6px 0 var(--red), 12px 0 var(--red), 15px 0 var(--red), 
+            box-shadow: 3px 0 var(--red), 6px 0 var(--red), 12px 0 var(--red), 15px 0 var(--red), 
                 0 3px var(--red), 3px 3px var(--red), 6px 3px var(--red), 9px 3px var(--red), 12px 3px var(--red), 15px 3px var(--red), 18px 3px var(--red), 
                 0 6px var(--red), 3px 6px var(--red), 6px 6px var(--red), 9px 6px var(--red), 12px 6px var(--red), 15px 6px var(--red), 18px 6px var(--red), 
                 3px 9px var(--red), 6px 9px var(--red), 9px 9px var(--red), 12px 9px var(--red), 15px 9px var(--red), 
@@ -309,7 +308,8 @@
 
     <button id="leaderboard-toggle-btn" class="top-btn" onclick="toggleLeaderboard(true)">RANKINGS</button>
     <button id="store-toggle-btn" class="top-btn" onclick="toggleStore(true)">XP STORE</button>
-    <button id="calibrate-toggle-btn" class="top-btn" onclick="runCalibration()">SET BASELINE NOISE</button>
+    <button id="briefingBtn" class="top-btn" onclick="toggleBriefing(true)">MISSION GUIDELINES</button>
+
 
     <div id="store-overlay">
         <div class="ui-card">
@@ -360,18 +360,9 @@
             <img src="banner.png" alt="Ninja Mode">
         </div>
         
-        <button id="briefingBtn" onclick="toggleBriefing(true)" style="margin-bottom: 15px;">VIEW MISSION BRIEFING</button>
-        
         <div id="class-directory"></div>
         <div id="arrow-helper">⬆ SELECT EXISTING ⬆</div>
         <input type="text" id="classInput" class="input-box" placeholder="ENTER CLASS OR SELECT EXISTING">
-        
-        <div id="vibe-labels">
-            <span class="stealth-label">STEALTH SILENCE</span>
-            <span>COLLABORATION</span>
-        </div>
-        <input type="range" id="sensitivity" min="10" max="80" value="35" step="5">
-        <div style="font-size: 0.8rem; margin-bottom: 15px; color: var(--gold); text-shadow: 2px 2px #000;">THRESHOLD: <span id="thresh-val">35</span></div>
         
         <select id="timeInput" class="input-box">
             <option value="0.5">30 SECONDS (TEST)</option>
@@ -379,6 +370,17 @@
             <option value="10">10 MINUTES</option>
             <option value="15">15 MINUTES</option>
         </select>
+        
+        <div style="margin-top: 10px; width: 100%; display: flex; flex-direction: column; align-items: center;">
+            <button id="calibrate-btn-main" onclick="runCalibration()">SET BASELINE NOISE</button>
+            <div id="vibe-labels">
+                <span class="stealth-label">STEALTH SILENCE</span>
+                <span>COLLABORATION</span>
+            </div>
+            <input type="range" id="sensitivity" min="10" max="80" value="35" step="5">
+            <div style="font-size: 0.8rem; margin-bottom: 20px; color: var(--gold); text-shadow: 2px 2px #000;">THRESHOLD: <span id="thresh-val">35</span></div>
+        </div>
+        
         <button id="startBtn" onclick="startMission()" style="font-size: 1.2rem; padding: 15px 40px;">START MISSION</button>
     </div>
 
@@ -521,7 +523,8 @@
         }
 
         async function runCalibration() {
-            const btn = document.getElementById('calibrate-toggle-btn');
+            // UPDATED: Now targeting the main menu button
+            const btn = document.getElementById('calibrate-btn-main');
             btn.innerText = "LISTENING..."; btn.classList.add('active'); btn.disabled = true;
 
             if (!audioContext) {
@@ -712,7 +715,8 @@
             document.getElementById('class-display').innerText = currentClassName.toUpperCase();
             document.getElementById('setup-screen').style.display = 'none';
             document.getElementById('game-container').style.display = 'flex';
-            document.getElementById('calibrate-toggle-btn').style.display = 'none';
+            // Ensure we hide the new top button too
+            document.getElementById('briefingBtn').style.display = 'none';
             document.getElementById('leaderboard-toggle-btn').style.display = 'none';
             document.getElementById('store-toggle-btn').style.display = 'none';
             
@@ -740,6 +744,8 @@
                     analyser.fftSize = 256;
                     microphone.connect(analyser);
                 } catch(e) { alert("Mic required!"); return; }
+            } else if (audioContext.state === 'suspended') {
+                await audioContext.resume();
             }
             requestAnimationFrame(gameLoop);
         }
