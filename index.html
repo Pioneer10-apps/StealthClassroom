@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ninja Mode - Free Edition</title>
+    <title>Stealth Classroom</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -31,25 +31,6 @@
             user-select: none;
             -webkit-user-select: none;
             transition: background-image 0.5s ease-in-out;
-        }
-
-        /* --- ADVERTISING CONTAINERS --- */
-        .ad-banner {
-            width: 100%; height: 90px;
-            background-color: #222; color: #555;
-            display: flex; justify-content: center; align-items: center;
-            font-size: 0.6rem; text-align: center;
-            border-bottom: 2px solid var(--gold); 
-            position: absolute; top: 0; z-index: 2000;
-            overflow: hidden;
-        }
-        
-        .ad-footer {
-            width: 100%; height: 60px;
-            background-color: #222; color: #555;
-            display: flex; justify-content: center; align-items: center;
-            font-size: 0.6rem;
-            position: absolute; bottom: 0; z-index: 2000;
         }
 
         /* --- GLOBAL UI ELEMENTS --- */
@@ -91,24 +72,24 @@
             display: flex; flex-direction: column; 
             justify-content: flex-start; 
             align-items: center; 
-            height: calc(100vh - 150px);
-            margin-top: 100px; 
+            height: 100vh;
+            margin-top: 0; 
+            padding-top: 80px;
             text-align: center;
             background-color: rgba(0, 0, 0, 0.5);
-            /* Added padding for spacing */
-            padding-top: 20px; 
+            box-sizing: border-box;
         }
         #game-container, #results-screen { 
             display: none; flex-direction: column;
             justify-content: center; align-items: center; 
-            height: calc(100vh - 150px);
-            margin-top: 90px;
+            height: 100vh;
+            margin-top: 0;
             background-color: rgba(0, 0, 0, 0.5);
         }
 
         /* --- TOP HEADER BUTTONS --- */
         .top-btn {
-            position: fixed; top: 110px; z-index: 3000;
+            position: fixed; top: 20px; z-index: 3000;
             font-size: 0.6rem; padding: 10px; 
             width: 160px; text-align: center;
             background-color: var(--ninja-navy);
@@ -117,8 +98,7 @@
         #leaderboard-toggle-btn { left: 20px; }
         #store-toggle-btn { left: 200px; }
         
-        /* MOVED BRIEFING BUTTON TO TOP RIGHT */
-        #briefingBtn { right: 20px; width: 220px; }
+        #briefingBtn { right: 20px; width: 220px; top: 20px; }
 
         /* --- UI CARDS --- */
         .ui-card {
@@ -136,7 +116,7 @@
         .logo-box {
             background: transparent; border: none; box-shadow: none; padding: 0; 
             width: 100%; max-width: 850px; 
-            margin-bottom: 20px; margin-top: -20px; 
+            margin-bottom: 20px; margin-top: 0px; 
             box-sizing: border-box; display: flex; flex-direction: column;
             justify-content: center; align-items: center;
         }
@@ -150,11 +130,17 @@
         .rank-up-active { animation: rank-flash 0.4s infinite alternate !important; }
 
         /* --- OVERLAYS --- */
-        #leaderboard-overlay, #briefing-overlay, #store-overlay {
+        #leaderboard-overlay, #briefing-overlay, #store-overlay, #welcome-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); z-index: 4000; flex-direction: column;
+            background: rgba(0,0,0,0.9); z-index: 4000; flex-direction: column;
             justify-content: center; align-items: center;
         }
+
+        /* --- WELCOME TEXT --- */
+        .welcome-text p {
+            font-size: 0.7rem; line-height: 1.6; color: #ddd; margin-bottom: 15px; text-align: left;
+        }
+        .welcome-highlight { color: var(--gold); }
 
         /* --- STORE STYLES --- */
         #store-balance-box { background: #000; border: 2px solid var(--gold); padding: 10px; margin-bottom: 20px; color: var(--gold); }
@@ -206,8 +192,9 @@
 
         /* --- HUD --- */
         #top-hud {
-            display: flex; justify-content: space-between; width: 100%; position: absolute; top: 90px;
+            display: flex; justify-content: space-between; width: 100%; position: absolute; top: 0;
             padding: 30px; box-sizing: border-box; background-color: rgba(42, 59, 144, 0.9); border-bottom: 4px solid var(--gold);
+            height: 110px;
         }
         .hud-item { 
             font-size: 0.9rem; 
@@ -217,7 +204,6 @@
             justify-content: center;
         }
         
-        /* Solid hearts with better spacing */
         #hearts {
             display: block;
             margin: 2px 0 10px 0; 
@@ -251,10 +237,29 @@
         #bonus-sign { display: none; color: var(--gold); font-size: 1.5rem; text-shadow: 3px 3px #000; animation: flash 0.6s infinite alternate; margin-bottom: 20px;}
         @keyframes flash { from { opacity: 1; } to { opacity: 0.3; } }
 
+        /* XP LOST SIGN */
+        #xp-lost-sign {
+            display: none;
+            position: absolute;
+            top: 40%;
+            color: var(--red);
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-shadow: 4px 4px 0 #000;
+            z-index: 500;
+            background-color: rgba(0,0,0,0.7);
+            padding: 20px;
+            border: 4px solid var(--red);
+        }
+
         .action-container { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
         #finishBtn { display: none; background-color: var(--green); border-color: var(--gold); }
         #abortBtn { background-color: var(--red); border-color: var(--gold); font-size: 0.7rem; padding: 10px 20px; }
         #abortBtn:hover { border-color: var(--white); background-color: #d32f2f; }
+        
+        /* NEW ESCAPE BUTTON */
+        #escapeBtn { background-color: var(--orange); border-color: var(--gold); font-size: 0.7rem; padding: 10px 20px; }
+        #escapeBtn:hover { border-color: var(--white); background-color: #e65100; }
         
         /* NEW BUTTON STYLE FOR CALIBRATE MAIN */
         #calibrate-btn-main {
@@ -302,14 +307,27 @@
 </head>
 <body>
 
-    <div class="ad-banner" id="top-ad-slot">
-        [AD SPACE RESERVED]
-    </div>
-
     <button id="leaderboard-toggle-btn" class="top-btn" onclick="toggleLeaderboard(true)">RANKINGS</button>
     <button id="store-toggle-btn" class="top-btn" onclick="toggleStore(true)">XP STORE</button>
     <button id="briefingBtn" class="top-btn" onclick="toggleBriefing(true)">MISSION GUIDELINES</button>
 
+    <div id="welcome-overlay">
+        <div class="ui-card welcome-text">
+            <h2 class="gold-heading">STEALTH CLASSROOM</h2>
+            <p>Welcome, Sensei. This tool helps your students master the art of silence.</p>
+            
+            <p><span class="welcome-highlight">► HOW IT WORKS:</span><br>
+            The Ninja watches the class. If the noise bar hits RED, you lose a heart. Keep it green to earn XP and rank up!</p>
+            
+            <p><span class="welcome-highlight">► DATA WARNING:</span><br>
+            All Class Data and XP is saved <b>ON THIS DEVICE</b>. If you clear your browser cache, the data will vanish.</p>
+            
+            <p><span class="welcome-highlight">► THE STORE:</span><br>
+            Students earn XP for completing sessions. Use XP in the Store to buy rewards (like "10 Mins Free Time").</p>
+
+            <button onclick="closeWelcome()" style="margin-top: 20px; width: 100%;">I UNDERSTAND - START MISSION</button>
+        </div>
+    </div>
 
     <div id="store-overlay">
         <div class="ui-card">
@@ -342,12 +360,13 @@
             <h2 class="gold-heading" style="text-align: center;">MISSION BRIEFING</h2>
             <div id="student-rules">
                 <p> <b>CHECKPOINTS:</b> Reach flags to earn XP.</p>
-                <p> <b>MISSION END:</b> Reach the end for a bonus.</p>
+                <p> <b>TIME BONUS:</b> +1 XP every minute.</p>
+                <p> <b>MISSION END:</b> Reach the end for a big bonus.</p>
                 <p> <b>LIVES:</b> 3 hearts per checkpoint.</p>
             </div>
             <div id="teacher-intel" class="intel-box" style="display:none;">
                 <h3 style="color: var(--gold); margin-top: 0; text-shadow: 2px 2px #000;">TEACHER INTEL</h3>
-                <p>• <b>XP REWARD:</b> Flags = 5 XP. Completion = 10 XP.</p>
+                <p>• <b>XP REWARD:</b> 1 XP/Min + Flag Bonuses.</p>
                 <button id="resetDataBtn" onclick="resetAllData()">WIPE ALL MISSION DATA</button>
             </div>
             <button id="teacherInfoBtn" onclick="toggleTeacherIntel()" style="margin-top: 20px; width: 100%;">TOP SECRET TEACHER INTEL</button>
@@ -357,7 +376,7 @@
 
     <div id="setup-screen">
         <div class="logo-box">
-            <img src="banner.png" alt="Ninja Mode">
+            <img src="banner.png" alt="Stealth Classroom">
         </div>
         
         <div id="class-directory"></div>
@@ -369,6 +388,9 @@
             <option value="5">5 MINUTES</option>
             <option value="10">10 MINUTES</option>
             <option value="15">15 MINUTES</option>
+            <option value="30">30 MINUTES</option>
+            <option value="45">45 MINUTES</option>
+            <option value="60">60 MINUTES</option>
         </select>
         
         <div style="margin-top: 10px; width: 100%; display: flex; flex-direction: column; align-items: center;">
@@ -397,6 +419,7 @@
             </div>
         </div>
         <div id="mission-center">
+            <div id="xp-lost-sign">XP LOST!</div>
             <div id="bonus-sign"> BONUS XP ZONE </div>
             <div id="progress-wrapper">
                 <div id="flag1" class="flag-container flag-red" style="left: 33.33%;"><div class="flag-pole"></div><div class="flag-fabric"></div></div>
@@ -409,7 +432,8 @@
             </div>
             <div id="class-display" style="color: var(--gold); font-size: 1.2rem; margin-top: 20px; text-shadow: 2px 2px #000;"></div>
             <div class="action-container">
-                <button id="finishBtn">CLAIM XP & FINISH</button>
+                <button id="finishBtn" onclick="endSession()">CLAIM XP & FINISH</button>
+                <button id="escapeBtn" onclick="escapeMission()">ESCAPE WITH XP</button>
                 <button id="pauseBtn" onclick="togglePause()">PAUSE</button>
                 <button id="abortBtn" onclick="abortMission()">ABORT MISSION</button>
             </div>
@@ -432,10 +456,6 @@
 
     <img id="ninja-mascot" src="ninja1.png" alt="Ninja">
 
-    <div class="ad-footer" id="bottom-ad-slot">
-        [AD SPACE RESERVED]
-    </div>
-
     <img src="background3.png" style="display: none;" alt="preload">
 
     <script>
@@ -445,7 +465,8 @@
         let currentThreshold = 35, lastTimestamp = 0, currentClassName = "";
         
         let flag1Claimed = false, flag2Claimed = false, completionXPClaimed = false;
-        
+        let minutesTracked = 0; 
+
         const h = '<i class="pixel-icon pixel-heart"></i>'; 
         const x = '<i class="pixel-icon pixel-cross"></i>'; 
         const heartIcons = [ h+h+h, h+h+x, h+x+x, x+x+x ];
@@ -469,6 +490,7 @@
 
         // --- INIT & NINJA SWAP LOGIC ---
         window.onload = function() { 
+            checkFirstVisit();
             updateDirectoryUI(); 
             if(!localStorage.getItem('ninja_store_items')) {
                 localStorage.setItem('ninja_store_items', JSON.stringify(defaultStoreItems));
@@ -486,6 +508,18 @@
             // START ANIMATION LOOP
             startNinjaCycle();
         };
+
+        function checkFirstVisit() {
+            const hasVisited = localStorage.getItem('stealthClassroom_visited');
+            if (!hasVisited) {
+                document.getElementById('welcome-overlay').style.display = 'flex';
+            }
+        }
+
+        function closeWelcome() {
+            localStorage.setItem('stealthClassroom_visited', 'true');
+            document.getElementById('welcome-overlay').style.display = 'none';
+        }
 
         // Ninja Loop (7s Ninja1 -> 3s Ninja2)
         function startNinjaCycle() {
@@ -523,7 +557,6 @@
         }
 
         async function runCalibration() {
-            // UPDATED: Now targeting the main menu button
             const btn = document.getElementById('calibrate-btn-main');
             btn.innerText = "LISTENING..."; btn.classList.add('active'); btn.disabled = true;
 
@@ -704,6 +737,7 @@
             elapsedSeconds = 0; strikes = 0; sessionXP = 0;
             isBonusZone = false; lastTimestamp = 0;
             flag1Claimed = false; flag2Claimed = false; completionXPClaimed = false;
+            minutesTracked = 0;
             
             document.getElementById('total-xp-val').innerText = history.totalXP;
             document.getElementById('streak-val').innerText = history.streak;
@@ -774,6 +808,7 @@
                                 } else {
                                     sessionXP = Math.max(0, sessionXP - 1);
                                     document.getElementById('xp').innerText = sessionXP;
+                                    showXPLost();
                                     strikes = 0;
                                     document.getElementById('hearts').innerHTML = heartIcons[0];
                                 }
@@ -790,9 +825,26 @@
             requestAnimationFrame(gameLoop);
         }
 
+        function showXPLost() {
+            const sign = document.getElementById('xp-lost-sign');
+            sign.style.display = 'block';
+            setTimeout(() => { sign.style.display = 'none'; }, 1000);
+        }
+
         function updateUI() {
             const progress = Math.min(elapsedSeconds / duration, 1);
             document.getElementById('progress-bar').style.width = (progress * 100) + "%";
+            
+            // --- NEW XP TRACKING LOGIC ---
+            // Calculate minutes passed
+            let currentMins = Math.floor(elapsedSeconds / 60);
+            if (currentMins > minutesTracked) {
+                // Add 1 XP for the new minute
+                sessionXP += 1;
+                minutesTracked = currentMins;
+                flashXPUpdate();
+            }
+
             if (progress >= 0.33) {
                 document.getElementById('flag1').classList.replace('flag-red', 'flag-green');
                 if (!flag1Claimed) { sessionXP += 5; flag1Claimed = true; flashXPUpdate(); }
@@ -829,6 +881,8 @@
                     elapsedSeconds = (elapsedSeconds >= duration * 0.66) ? duration * 0.66 : (elapsedSeconds >= duration * 0.33) ? duration * 0.33 : 0;
                     strikes = 0; isPaused = false;
                     document.getElementById('hearts').innerHTML = heartIcons[0];
+                    // Also reset minutes tracked if time jumps back
+                    minutesTracked = Math.floor(elapsedSeconds / 60);
                 }, 1000);
             }
         }
@@ -843,8 +897,15 @@
                 location.reload(); 
             }
         }
+        
+        function escapeMission() {
+            // Confirm exit
+            if(confirm("ESCAPE EARLY? You will keep your current XP and Streak.")) {
+                endSession();
+            }
+        }
 
-        document.getElementById('finishBtn').onclick = () => {
+        function endSession() {
             const finalXPAdded = sessionXP;
             let key = 'ninja_' + currentClassName.toUpperCase();
             let data = JSON.parse(localStorage.getItem(key) || '{"totalXP":0,"streak":0}');
@@ -894,7 +955,7 @@
             } else { rankDisplay.classList.remove('rank-up-active'); }
 
             document.getElementById('typewriter-text').innerText = missionMessage;
-        };
+        }
 
         function toggleBriefing(show) { document.getElementById('briefing-overlay').style.display = show ? 'flex' : 'none'; }
     </script>
