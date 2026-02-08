@@ -365,15 +365,26 @@
         <div class="ui-card welcome-text">
             <h2 class="gold-heading">STEALTH CLASSROOM</h2>
             <p>Welcome, Sensei. This tool helps your students master the art of silence.</p>
-            <p><span class="welcome-highlight">► HOW IT WORKS:</span><br>The Ninja watches the class. Noise = Lose Heart. Keep it green to earn XP and rank up!</p>
-            <p><span class="welcome-highlight">► IPAD TIP:</span><br>iPads try to cancel background noise. <b>Prop it up</b> (don't lay flat) and run <b>"Set Baseline Noise"</b> for best results.</p>
-            <p><span class="welcome-highlight">► DATA WARNING:</span><br>All Class Data and XP is saved <b>ON THIS DEVICE</b>. If you clear your browser cache, the data will vanish.</p>
+            
+            <p><span class="welcome-highlight">► HOW IT WORKS:</span><br>
+            The Ninja watches the class. If the noise bar hits RED, you lose a heart. Keep it green to earn XP and rank up!</p>
+            
+            <p><span class="welcome-highlight">► IPAD TIP:</span><br>
+            iPads try to cancel background noise. <b>Prop it up</b> (don't lay flat) and run <b>"Set Baseline Noise"</b> for best results.</p>
+
+            <p><span class="welcome-highlight">► DATA WARNING:</span><br>
+            All Class Data and XP is saved <b>ON THIS DEVICE</b>. If you clear your browser cache, the data will vanish.</p>
+            
+            <p><span class="welcome-highlight">► THE STORE:</span><br>
+            Students earn XP for completing sessions. Use XP in the Store to buy rewards (like "10 Mins Free Time").</p>
+
             <button onclick="closeWelcome()" style="margin-top: 20px; width: 100%;">I UNDERSTAND - START MISSION</button>
         </div>
     </div>
 
     <div id="store-overlay">
         <div class="ui-card">
+            <div id="store-class-info" style="font-size: 0.8rem; color: var(--gold); margin-bottom: 10px; text-shadow: 2px 2px #000;"></div>
             <h2 class="gold-heading">XP STORE</h2>
             <div id="store-balance-box">TOTAL XP: <span id="store-wallet">0</span></div>
             <div id="store-list"></div>
@@ -402,7 +413,7 @@
         <div class="briefing-card ui-card">
             <h2 class="gold-heading" style="text-align: center;">MISSION BRIEFING</h2>
             <div id="student-rules">
-                <p> <b>CHECKPOINTS:</b> Scaling XP based on time.</p>
+                <p> <b>CHECKPOINTS:</b> Reach flags to earn XP.</p>
                 <p> <b>TIME BONUS:</b> +1 XP every minute.</p>
                 <p> <b>MISSION END:</b> Reach the end for a big bonus.</p>
                 <p> <b>LIVES:</b> 3 hearts per checkpoint.</p>
@@ -532,12 +543,15 @@
             { name: "No Homework Pass", cost: 300 }
         ];
 
+        // --- INIT & NINJA SWAP LOGIC ---
         window.onload = function() { 
             checkFirstVisit();
             updateDirectoryUI(); 
             if(!localStorage.getItem('ninja_store_items')) {
                 localStorage.setItem('ninja_store_items', JSON.stringify(defaultStoreItems));
             }
+
+            // ENTER KEY LISTENER
             document.getElementById('classInput').addEventListener('keydown', function(event) {
                 if (event.key === 'Enter') {
                     this.classList.add('input-success');
@@ -545,6 +559,8 @@
                     setTimeout(() => { this.classList.remove('input-success'); }, 1000);
                 }
             });
+
+            // START ANIMATION LOOP
             startNinjaCycle();
         };
 
@@ -560,25 +576,31 @@
             document.getElementById('welcome-overlay').style.display = 'none';
         }
 
+        // Ninja Loop (7s Ninja1 -> 3s Ninja2)
         function startNinjaCycle() {
             const ninja = document.getElementById('ninja-mascot');
+            
             function showNinja1() {
+                // Check if game has started (setup screen hidden). If so, stop loop.
                 if(document.getElementById('setup-screen').style.display === 'none') return; 
                 ninja.src = 'ninja1.png';
                 setTimeout(showNinja2, 7000);
             }
+
             function showNinja2() {
+                // Check if game has started (setup screen hidden). If so, stop loop.
                 if(document.getElementById('setup-screen').style.display === 'none') return;
                 ninja.src = 'ninja2.png';
                 setTimeout(showNinja1, 3000);
             }
+
+            // Start the cycle
             showNinja1();
         }
 
-        // --- UPDATED: SHARE FUNCTION ---
         function shareWithTeachers() {
-            const subject = encodeURIComponent("Sensei! You have to try this Noise Monitor");
-            const body = encodeURIComponent("Hi,\n\nI've been using this tool called Stealth Classroom to help manage noise levels with my students. It's gamified—students earn XP and level up through ninja belts while mastering the art of silence. It has made my transitions so much smoother!\n\nYou can try it here: www.stealthclassroom.com\n\nHope it helps your classroom as much as it has mine!");
+            const subject = encodeURIComponent("You have to try this noise monitor");
+            const body = encodeURIComponent("Hi,\n\nI've been using this tool called Stealth Classroom to help manage noise levels in my classroom. It's gamified—students earn XP and level up through ninja belts while mastering the art of silence. It has made my transitions so much smoother!\n\nYou can try it here: www.stealthclassroom.com\n\nHope it helps your classroom as much as it has mine!");
             window.location.href = `mailto:?subject=${subject}&body=${body}`;
         }
 
@@ -655,14 +677,20 @@
 
         function toggleStore(show) {
             const overlay = document.getElementById('store-overlay');
-            const classInput = document.getElementById('classInput').value.trim();
+            const classInput = document.getElementById('classInput').value.trim() || currentClassName;
             const walletSpan = document.getElementById('store-wallet');
+            const infoDiv = document.getElementById('store-class-info');
             
             if(show) {
-                if(!classInput) { walletSpan.innerText = "??? (ENTER CLASS)"; } else {
+                if(!classInput) { 
+                    walletSpan.innerText = "??? (ENTER CLASS)"; 
+                    infoDiv.innerText = "NO CLASS SELECTED";
+                } else {
                     let key = 'ninja_' + classInput.toUpperCase();
                     let stats = JSON.parse(localStorage.getItem(key) || '{"totalXP":0}');
                     walletSpan.innerText = stats.totalXP;
+                    // --- UPDATED: DISPLAY CLASS NAME AND XP ABOVE STORE HEADING ---
+                    infoDiv.innerText = `CLASS: ${classInput.toUpperCase()} - XP: ${stats.totalXP}`;
                 }
                 renderStoreItems(); overlay.style.display = 'flex';
             } else {
@@ -689,16 +717,18 @@
         }
 
         function buyItem(index, cost) {
-            const classInput = document.getElementById('classInput').value.trim();
+            const classInput = document.getElementById('classInput').value.trim() || currentClassName;
             if(!classInput) { alert("Please enter a Class Name on the main screen to access Total XP."); return; }
             let key = 'ninja_' + classInput.toUpperCase();
             let stats = JSON.parse(localStorage.getItem(key) || '{"totalXP":0,"streak":0}');
             if(stats.totalXP >= cost) {
                 if(confirm(`Purchase this for ${cost} XP?`)) {
                     stats.totalXP -= cost; localStorage.setItem(key, JSON.stringify(stats));
-                    document.getElementById('store-wallet').innerText = stats.totalXP; alert("ITEM ACQUIRED!");
+                    document.getElementById('store-wallet').innerText = stats.totalXP;
+                    document.getElementById('store-class-info').innerText = `CLASS: ${classInput.toUpperCase()} - XP: ${stats.totalXP}`;
+                    alert("ITEM ACQUIRED! XP DEDUCTED.");
                 }
-            } else { alert("INSUFFICIENT XP!"); }
+            } else { alert("INSUFFICIENT XP! Keep playing to earn more."); }
         }
 
         function toggleRestockPanel() {
@@ -719,7 +749,7 @@
         }
 
         function removeStoreItem(index) {
-            if(confirm("Are you sure you want to remove this item?")) {
+            if(confirm("Are you sure you want to remove this item from the store?")) {
                 const items = JSON.parse(localStorage.getItem('ninja_store_items') || "[]");
                 items.splice(index, 1);
                 localStorage.setItem('ninja_store_items', JSON.stringify(items));
@@ -756,8 +786,19 @@
             }
         }
 
+        function getRank(xp) {
+            if (xp >= 1000) return "BLACK BELT";
+            if (xp >= 500) return "RED BELT";
+            if (xp >= 250) return "BLUE BELT";
+            if (xp >= 100) return "GREEN BELT";
+            if (xp >= 50) return "YELLOW BELT";
+            return "WHITE BELT";
+        }
+
         async function startMission() {
+            // SWITCH BACKGROUND
             document.body.style.backgroundImage = "url('background2.png')";
+
             currentClassName = document.getElementById('classInput').value.trim() || "GUEST";
             let key = 'ninja_' + currentClassName.toUpperCase();
             let history = JSON.parse(localStorage.getItem(key) || '{"totalXP":0,"streak":0}');
@@ -771,19 +812,26 @@
             document.getElementById('streak-val').innerText = history.streak;
             document.getElementById('xp').innerText = "0";
             document.getElementById('hearts').innerHTML = heartIcons[0];
+            
             duration = parseFloat(document.getElementById('timeInput').value) * 60;
             
             document.getElementById('class-display').innerText = currentClassName.toUpperCase();
             document.getElementById('setup-screen').style.display = 'none';
             document.getElementById('game-container').style.display = 'flex';
+            // Ensure we hide the new top button too
             document.getElementById('briefingBtn').style.display = 'none';
             document.getElementById('leaderboard-toggle-btn').style.display = 'none';
             document.getElementById('store-toggle-btn').style.display = 'none';
             document.getElementById('shareBtn').style.display = 'none';
             
+            // ENSURE QUIET NINJA IS SHOWN FOR GAME
             const ninja = document.getElementById('ninja-mascot');
-            ninja.src = 'ninja3.png'; ninja.style.bottom = '33vh'; 
+            ninja.src = 'ninja3.png';
+            ninja.style.transition = ''; // Ensure transition is reset for start
             ninja.classList.remove('ninja-hidden');
+            
+            // --- UPDATED: MOVE NINJA3 UP 1/3 OF THE SCREEN ---
+            ninja.style.bottom = '33vh'; 
             
             setTimeout(() => {
                 if(!isPaused && document.getElementById('game-container').style.display === 'flex') {
@@ -857,6 +905,7 @@
             const progress = Math.min(elapsedSeconds / duration, 1);
             document.getElementById('progress-bar').style.width = (progress * 100) + "%";
             
+            // --- SCALING REWARD LOGIC ---
             let currentMins = Math.floor(elapsedSeconds / 60);
             if (currentMins > minutesTracked) {
                 sessionXP += 1;
@@ -867,7 +916,6 @@
             if (progress >= 0.33) {
                 document.getElementById('flag1').classList.replace('flag-red', 'flag-green');
                 if (!flag1Claimed) { 
-                    // UPDATED REWARD LOGIC: Scaling XP based on time
                     sessionXP += minutesTracked; 
                     flag1Claimed = true; flashXPUpdate(); 
                 }
@@ -875,7 +923,6 @@
             if (progress >= 0.66) {
                 document.getElementById('flag2').classList.replace('flag-red', 'flag-green');
                 if (!flag2Claimed) { 
-                    // UPDATED REWARD LOGIC: Scaling XP based on time
                     sessionXP += minutesTracked; 
                     flag2Claimed = true; flashXPUpdate(); 
                 }
@@ -886,7 +933,6 @@
                 document.getElementById('finishBtn').style.display = 'block';
                 document.getElementById('timer-label').innerText = "BONUS:";
                 if (!completionXPClaimed) { 
-                    // UPDATED REWARD LOGIC: Scaling XP based on time
                     sessionXP += (minutesTracked * 2); 
                     completionXPClaimed = true; flashXPUpdate(); 
                 }
@@ -920,11 +966,18 @@
         function togglePause() { isPaused = !isPaused; document.getElementById('pauseBtn').innerText = isPaused ? "RESUME" : "PAUSE"; }
 
         function abortMission() {
-            if(confirm("ABORT MISSION?")) { location.reload(); }
+            if(confirm("ABORT MISSION? This will reset the streak to 0.")) {
+                let key = 'ninja_' + currentClassName.toUpperCase();
+                let data = JSON.parse(localStorage.getItem(key) || '{"totalXP":0,"streak":0}');
+                data.streak = 0; localStorage.setItem(key, JSON.stringify(data));
+                location.reload(); 
+            }
         }
         
         function escapeMission() {
-            if(confirm("ESCAPE EARLY? You will keep your current XP.")) { endSession(); }
+            if(confirm("ESCAPE EARLY? You will keep your current XP and Streak.")) {
+                endSession();
+            }
         }
 
         function endSession() {
@@ -947,15 +1000,22 @@
             
             document.getElementById('game-container').style.display = 'none';
             document.getElementById('results-screen').style.display = 'flex';
-            document.body.style.backgroundImage = "url('background3.png')"; 
+            
+            document.body.style.backgroundImage = "url('background3.png')"; // SWITCH TO FINAL BG
 
+            // CHANGE MASCOT TO DONE.PNG
             const mascot = document.getElementById('ninja-mascot');
             mascot.src = 'done.png'; 
             mascot.classList.remove('ninja-hidden'); 
-            mascot.style.width = '225px'; mascot.style.left = '28%'; mascot.style.bottom = '15%';  
 
+            // --- UPDATED: MOVE CENTRAL, REDUCE SIZE ---
+            mascot.style.width = '225px'; 
+            mascot.style.left = '28%';    // Moved centrally over the box
+            mascot.style.bottom = '15%';  
+
+            // --- UPDATED: 5 SECONDS THEN INSTANT VANISH ---
             setTimeout(() => {
-                mascot.style.transition = 'none'; 
+                mascot.style.transition = 'none'; // Ensure instant vanish
                 mascot.classList.add('ninja-hidden');
             }, 5000);
             
@@ -972,13 +1032,7 @@
             document.getElementById('typewriter-text').innerText = missionMessage;
         }
 
-        function toggleLeaderboard(show) { document.getElementById('leaderboard-overlay').style.display = show ? 'flex' : 'none'; }
-        function toggleStore(show) { document.getElementById('store-overlay').style.display = show ? 'flex' : 'none'; }
         function toggleBriefing(show) { document.getElementById('briefing-overlay').style.display = show ? 'flex' : 'none'; }
-        function toggleTeacherIntel() {
-            const intel = document.getElementById('teacher-intel');
-            intel.style.display = intel.style.display === 'block' ? 'none' : 'block';
-        }
     </script>
 </body>
 </html>
