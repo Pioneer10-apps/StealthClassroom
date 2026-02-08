@@ -178,7 +178,7 @@
             cursor: pointer; margin-left: 10px; transition: all 0.2s;
         }
         .delete-item-x:hover { color: #fff; background: var(--red); border-color: var(--white); }
-        #restock-panel { display: none; border-top: 2px dashed var(--gold); padding-top: 20px; margin-top: 20px; }
+        #restock-panel, #manual-xp-panel { display: none; border-top: 2px dashed var(--gold); padding-top: 20px; margin-top: 20px; }
         .restock-input { width: 80%; padding: 10px; margin-bottom: 10px; font-family: var(--pixel-font); font-size: 0.6rem; }
 
         /* --- LEADERBOARD --- */
@@ -388,12 +388,26 @@
             <h2 class="gold-heading">XP STORE</h2>
             <div id="store-balance-box">TOTAL XP: <span id="store-wallet">0</span></div>
             <div id="store-list"></div>
-            <button onclick="toggleRestockPanel()" style="font-size: 0.6rem; width: 100%; margin-bottom: 10px;">RESTOCK STORE</button>
+            
+            <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 10px;">
+                <button onclick="toggleManualXPPanel()" style="font-size: 0.5rem; flex: 1; padding: 10px;">MANUAL XP ENTRY</button>
+                <button onclick="toggleRestockPanel()" style="font-size: 0.5rem; flex: 1; padding: 10px;">RESTOCK STORE</button>
+            </div>
+
             <div id="restock-panel">
+                <h3 style="font-size: 0.6rem; color: var(--gold);">ADD NEW REWARD</h3>
                 <input type="text" id="newItemName" class="restock-input" placeholder="REWARD NAME">
                 <input type="number" id="newItemPrice" class="restock-input" placeholder="COST (XP)">
-                <button onclick="addNewStoreItem()">ADD TO SHELF</button>
+                <button onclick="addNewStoreItem()" style="font-size: 0.5rem; width: 100%; margin-top: 5px;">ADD TO SHELF</button>
             </div>
+
+            <div id="manual-xp-panel">
+                <h3 style="font-size: 0.6rem; color: var(--gold);">SENSEI! MANUAL XP ENTRY</h3>
+                <p style="font-size: 0.4rem; color: #ccc; margin-bottom: 5px;">(Use this to sync from another device)</p>
+                <input type="number" id="manualXPInput" class="restock-input" placeholder="XP TO ADD">
+                <button onclick="manualAddXP()" style="font-size: 0.5rem; width: 100%; background: var(--green); margin-top: 5px;">SYNC / ADD XP</button>
+            </div>
+
             <button onclick="toggleStore(false)" style="margin-top: 20px;">CLOSE STORE</button>
         </div>
     </div>
@@ -689,12 +703,13 @@
                     let key = 'ninja_' + classInput.toUpperCase();
                     let stats = JSON.parse(localStorage.getItem(key) || '{"totalXP":0}');
                     walletSpan.innerText = stats.totalXP;
-                    // --- UPDATED: DISPLAY CLASS NAME AND XP ABOVE STORE HEADING ---
                     infoDiv.innerText = `CLASS: ${classInput.toUpperCase()} - XP: ${stats.totalXP}`;
                 }
                 renderStoreItems(); overlay.style.display = 'flex';
             } else {
-                overlay.style.display = 'none'; document.getElementById('restock-panel').style.display = 'none';
+                overlay.style.display = 'none'; 
+                document.getElementById('restock-panel').style.display = 'none';
+                document.getElementById('manual-xp-panel').style.display = 'none';
             }
         }
 
@@ -731,9 +746,44 @@
             } else { alert("INSUFFICIENT XP! Keep playing to earn more."); }
         }
 
+        function manualAddXP() {
+            const classInput = document.getElementById('classInput').value.trim() || currentClassName;
+            const amountToAdd = parseInt(document.getElementById('manualXPInput').value);
+            
+            if(!classInput) { alert("Select or enter a class first."); return; }
+            if(isNaN(amountToAdd) || amountToAdd === 0) { alert("Enter a valid XP amount."); return; }
+
+            let key = 'ninja_' + classInput.toUpperCase();
+            let stats = JSON.parse(localStorage.getItem(key) || '{"totalXP":0,"streak":0}');
+            
+            stats.totalXP += amountToAdd;
+            localStorage.setItem(key, JSON.stringify(stats));
+            
+            let directory = JSON.parse(localStorage.getItem('ninja_directory') || "[]");
+            if (!directory.includes(classInput.toUpperCase())) {
+                directory.push(classInput.toUpperCase());
+                localStorage.setItem('ninja_directory', JSON.stringify(directory));
+                updateDirectoryUI();
+            }
+
+            document.getElementById('manualXPInput').value = "";
+            document.getElementById('store-wallet').innerText = stats.totalXP;
+            document.getElementById('store-class-info').innerText = `CLASS: ${classInput.toUpperCase()} - XP: ${stats.totalXP}`;
+            alert(`SENSEI SUCCESS! XP updated.`);
+        }
+
         function toggleRestockPanel() {
-            const panel = document.getElementById('restock-panel');
-            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+            const restock = document.getElementById('restock-panel');
+            const manual = document.getElementById('manual-xp-panel');
+            restock.style.display = restock.style.display === 'block' ? 'none' : 'block';
+            manual.style.display = 'none';
+        }
+
+        function toggleManualXPPanel() {
+            const manual = document.getElementById('manual-xp-panel');
+            const restock = document.getElementById('restock-panel');
+            manual.style.display = manual.style.display === 'block' ? 'none' : 'block';
+            restock.style.display = 'none';
         }
 
         function addNewStoreItem() {
@@ -830,7 +880,7 @@
             ninja.style.transition = ''; // Ensure transition is reset for start
             ninja.classList.remove('ninja-hidden');
             
-            // --- UPDATED: MOVE NINJA3 UP 1/3 OF THE SCREEN ---
+            // --- MOVE NINJA3 UP 1/3 OF THE SCREEN ---
             ninja.style.bottom = '33vh'; 
             
             setTimeout(() => {
@@ -1000,22 +1050,15 @@
             
             document.getElementById('game-container').style.display = 'none';
             document.getElementById('results-screen').style.display = 'flex';
-            
-            document.body.style.backgroundImage = "url('background3.png')"; // SWITCH TO FINAL BG
+            document.body.style.backgroundImage = "url('background3.png')"; 
 
-            // CHANGE MASCOT TO DONE.PNG
             const mascot = document.getElementById('ninja-mascot');
             mascot.src = 'done.png'; 
             mascot.classList.remove('ninja-hidden'); 
+            mascot.style.width = '225px'; mascot.style.left = '28%'; mascot.style.bottom = '15%';  
 
-            // --- UPDATED: MOVE CENTRAL, REDUCE SIZE ---
-            mascot.style.width = '225px'; 
-            mascot.style.left = '28%';    // Moved centrally over the box
-            mascot.style.bottom = '15%';  
-
-            // --- UPDATED: 5 SECONDS THEN INSTANT VANISH ---
             setTimeout(() => {
-                mascot.style.transition = 'none'; // Ensure instant vanish
+                mascot.style.transition = 'none'; 
                 mascot.classList.add('ninja-hidden');
             }, 5000);
             
