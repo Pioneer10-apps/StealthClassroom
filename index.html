@@ -87,18 +87,25 @@
             background-color: rgba(0, 0, 0, 0.5);
         }
 
+        /* --- UX FIX: PAIRED HEADER GROUPS (FIX FOR NARROW SCREENS) --- */
+        .top-left-group, .top-right-group {
+            position: fixed;
+            top: 20px;
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .top-left-group { left: 20px; }
+        .top-right-group { right: 20px; align-items: flex-end; }
+
         /* --- TOP HEADER BUTTONS --- */
         .top-btn {
-            position: fixed; top: 20px; z-index: 3000;
             font-size: 0.6rem; padding: 10px; 
-            width: 160px; text-align: center;
+            width: 170px; text-align: center;
             background-color: var(--ninja-navy);
             border: 3px solid var(--gold);
         }
-        #leaderboard-toggle-btn { left: 20px; }
-        #store-toggle-btn { left: 200px; }
-        
-        #briefingBtn { right: 20px; width: 220px; top: 20px; }
 
         /* --- FLAMING SHARE BUTTON --- */
         @keyframes flicker {
@@ -108,14 +115,6 @@
         }
 
         #shareBtn { 
-            position: fixed;
-            right: 260px; 
-            top: 20px;
-            width: 160px;
-            z-index: 3000;
-            font-size: 0.6rem;
-            padding: 10px;
-            text-align: center;
             border-color: var(--orange);
             animation: flicker 0.3s infinite alternate;
             background: linear-gradient(to bottom, var(--ninja-navy), var(--red));
@@ -325,7 +324,11 @@
             margin-top: 4px; margin-left: 2px;
         }
 
-        /* --- MOBILE LANDSCAPE FIXES (COMPACT MODE) --- */
+        /* --- FIXED UX: MOBILE LANDSCAPE & PORTRAIT RULES --- */
+        @media (orientation: portrait), (max-width: 650px) {
+            #ninja-mascot { display: none !important; } /* Prevents mascot from blocking start mission button */
+        }
+
         @media only screen and (max-height: 600px) {
             /* 1. FORCE SCROLLING ON BODY */
             body, html { overflow-y: auto !important; height: auto !important; }
@@ -335,7 +338,7 @@
                 height: auto; 
                 min-height: 100vh;
                 justify-content: flex-start; /* Start from top */
-                padding-top: 60px; /* Keep top buttons visible */
+                padding-top: 100px; /* Space for stacked buttons */
                 padding-bottom: 100px; /* BIG BUFFER FOR SCROLLING */
             }
 
@@ -351,15 +354,25 @@
             #vibe-labels { width: 80%; }
             
             #startBtn { padding: 10px 20px; font-size: 1rem; margin-top: 10px; }
+
+            /* Action buttons side-by-side to prevent scrolling on game screen */
+            .action-container { flex-direction: row; gap: 10px; flex-wrap: wrap; justify-content: center; }
+            #mission-center { margin-top: 40px; transform: scale(0.9); }
+            #top-hud { height: 90px; padding: 15px; }
         }
     </style>
 </head>
 <body>
 
-    <button id="leaderboard-toggle-btn" class="top-btn" onclick="toggleLeaderboard(true)">RANKINGS</button>
-    <button id="store-toggle-btn" class="top-btn" onclick="toggleStore(true)">XP STORE</button>
-    <button id="shareBtn" onclick="shareWithTeachers()">SHARE 🔥</button>
-    <button id="briefingBtn" class="top-btn" onclick="toggleBriefing(true)">MISSION GUIDELINES</button>
+    <div class="top-left-group">
+        <button id="store-toggle-btn" class="top-btn" onclick="toggleStore(true)">XP STORE</button>
+        <button id="leaderboard-toggle-btn" class="top-btn" onclick="toggleLeaderboard(true)">RANKINGS</button>
+    </div>
+
+    <div class="top-right-group">
+        <button id="briefingBtn" class="top-btn" onclick="toggleBriefing(true)">MISSION GUIDELINES</button>
+        <button id="shareBtn" class="top-btn" onclick="shareWithTeachers()">SHARE 🔥</button>
+    </div>
 
     <div id="welcome-overlay">
         <div class="ui-card welcome-text">
@@ -614,7 +627,7 @@
 
         function shareWithTeachers() {
             const subject = encodeURIComponent("You have to try this noise monitor");
-            const body = encodeURIComponent("Hi,\n\nI've been using this tool called Stealth Classroom to help manage noise levels in my classroom. It's gamified—students earn XP and level up through ninja belts while mastering the art of silence. It has made my transitions so much smoother!\n\nYou can try it here: www.stealthclassroom.com\n\nHope it helps your classroom as much as it has mine!");
+            const body = encodeURIComponent("Hi Sensei,\n\nI've been using this tool called Stealth Classroom to help manage noise levels in my classroom. It's gamified—students earn XP and level up through ninja belts while mastering the art of silence. It has made my transitions so much smoother!\n\nYou can try it here: www.stealthclassroom.com\n\nHope it helps your classroom as much as it has mine!");
             window.location.href = `mailto:?subject=${subject}&body=${body}`;
         }
 
@@ -868,11 +881,8 @@
             document.getElementById('class-display').innerText = currentClassName.toUpperCase();
             document.getElementById('setup-screen').style.display = 'none';
             document.getElementById('game-container').style.display = 'flex';
-            // Ensure we hide the new top button too
-            document.getElementById('briefingBtn').style.display = 'none';
-            document.getElementById('leaderboard-toggle-btn').style.display = 'none';
-            document.getElementById('store-toggle-btn').style.display = 'none';
-            document.getElementById('shareBtn').style.display = 'none';
+            // Ensure we hide the new top groups too
+            document.querySelectorAll('.top-left-group, .top-right-group').forEach(g => g.style.display = 'none');
             
             // ENSURE QUIET NINJA IS SHOWN FOR GAME
             const ninja = document.getElementById('ninja-mascot');
@@ -956,8 +966,10 @@
             document.getElementById('progress-bar').style.width = (progress * 100) + "%";
             
             // --- SCALING REWARD LOGIC ---
+            // Calculate minutes passed
             let currentMins = Math.floor(elapsedSeconds / 60);
             if (currentMins > minutesTracked) {
+                // Add 1 XP for the new minute
                 sessionXP += 1;
                 minutesTracked = currentMins;
                 flashXPUpdate();
@@ -966,6 +978,7 @@
             if (progress >= 0.33) {
                 document.getElementById('flag1').classList.replace('flag-red', 'flag-green');
                 if (!flag1Claimed) { 
+                    // ADDED: Bonus based on minutes tracked so far
                     sessionXP += minutesTracked; 
                     flag1Claimed = true; flashXPUpdate(); 
                 }
@@ -973,6 +986,7 @@
             if (progress >= 0.66) {
                 document.getElementById('flag2').classList.replace('flag-red', 'flag-green');
                 if (!flag2Claimed) { 
+                    // ADDED: Bonus based on minutes tracked so far
                     sessionXP += minutesTracked; 
                     flag2Claimed = true; flashXPUpdate(); 
                 }
@@ -983,6 +997,7 @@
                 document.getElementById('finishBtn').style.display = 'block';
                 document.getElementById('timer-label').innerText = "BONUS:";
                 if (!completionXPClaimed) { 
+                    // ADDED: Double completion bonus (2x total minutes)
                     sessionXP += (minutesTracked * 2); 
                     completionXPClaimed = true; flashXPUpdate(); 
                 }
@@ -1008,6 +1023,7 @@
                     elapsedSeconds = (elapsedSeconds >= duration * 0.66) ? duration * 0.66 : (elapsedSeconds >= duration * 0.33) ? duration * 0.33 : 0;
                     strikes = 0; isPaused = false;
                     document.getElementById('hearts').innerHTML = heartIcons[0];
+                    // Also reset minutes tracked if time jumps back
                     minutesTracked = Math.floor(elapsedSeconds / 60);
                 }, 1000);
             }
@@ -1025,6 +1041,7 @@
         }
         
         function escapeMission() {
+            // Confirm exit
             if(confirm("ESCAPE EARLY? You will keep your current XP and Streak.")) {
                 endSession();
             }
@@ -1050,15 +1067,22 @@
             
             document.getElementById('game-container').style.display = 'none';
             document.getElementById('results-screen').style.display = 'flex';
-            document.body.style.backgroundImage = "url('background3.png')"; 
+            
+            document.body.style.backgroundImage = "url('background3.png')"; // SWITCH TO FINAL BG
 
+            // CHANGE MASCOT TO DONE.PNG
             const mascot = document.getElementById('ninja-mascot');
             mascot.src = 'done.png'; 
             mascot.classList.remove('ninja-hidden'); 
-            mascot.style.width = '225px'; mascot.style.left = '28%'; mascot.style.bottom = '15%';  
 
+            // --- UPDATED: MOVE CENTRAL, REDUCE SIZE ---
+            mascot.style.width = '225px'; 
+            mascot.style.left = '28%';    // Moved centrally over the box
+            mascot.style.bottom = '15%';  
+
+            // --- UPDATED: 5 SECONDS THEN INSTANT VANISH ---
             setTimeout(() => {
-                mascot.style.transition = 'none'; 
+                mascot.style.transition = 'none'; // Ensure instant vanish
                 mascot.classList.add('ninja-hidden');
             }, 5000);
             
