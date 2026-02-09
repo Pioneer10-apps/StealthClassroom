@@ -232,7 +232,7 @@
         .total-stat { color: var(--gold); font-size: 0.7rem; margin-top: 12px; }
 
         /* --- MISSION CENTER --- */
-        #mission-center { gap: 20px; width: 100%; display: flex; flex-direction: column; align-items: center; }
+        #mission-center { gap: 20px; width: 100%; display: flex; flex-direction: column; align-items: center; position: relative; }
         #progress-wrapper {
             width: 85%; height: 60px; background-color: #222; border: 4px solid var(--gold); position: relative; margin-top: 60px;
             box-shadow: 4px 4px 0 var(--ninja-dark-bg);
@@ -359,6 +359,21 @@
             .action-container { flex-direction: row; gap: 10px; flex-wrap: wrap; justify-content: center; }
             #mission-center { margin-top: 40px; transform: scale(0.9); }
             #top-hud { height: 90px; padding: 15px; }
+
+            /* --- NEW LAYERED TIMER FOR LANDSCAPE --- */
+            #timer-display {
+                position: absolute;
+                top: 75px; 
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 100;
+                margin: 0;
+            }
+            #timer {
+                font-size: 2rem;
+                text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+            }
+            #timer-label { display: none; } /* Hides "TIME:" text in landscape */
         }
     </style>
 </head>
@@ -509,7 +524,7 @@
                 <div id="progress-bar"></div>
             </div>
             <div id="timer-display">
-                <div id="timer-label">TIME:</div>
+                <div id="timer-label"></div>
                 <div id="timer">00:00</div>
             </div>
             <div id="class-display" style="color: var(--gold); font-size: 1.2rem; margin-top: 20px; text-shadow: 2px 2px #000;"></div>
