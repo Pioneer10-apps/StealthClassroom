@@ -327,6 +327,28 @@
         /* --- FIXED UX: MOBILE LANDSCAPE & PORTRAIT RULES --- */
         @media (orientation: portrait), (max-width: 650px) {
             #ninja-mascot { display: none !important; } /* Prevents mascot from blocking start mission button */
+            
+            /* --- RESPONSIVE FIXES FOR PORTRAIT/MOBILE --- */
+            /* Ensure Buttons, Inputs, and Sliders have UNIFORM width */
+            .input-box, 
+            #calibrate-btn-main, 
+            #startBtn, 
+            input[type=range], 
+            #vibe-labels {
+                width: 85% !important; /* Uniform width for everything */
+                max-width: 400px;
+                box-sizing: border-box; /* Ensures padding doesn't widen element */
+                margin-left: auto;
+                margin-right: auto;
+            }
+            
+            #startBtn { 
+                padding: 15px 0 !important; /* Reduces side padding to fit screen */
+            }
+
+            /* Ensure game action buttons fit side-by-side or stack neatly */
+            .action-container { width: 100%; align-items: center; }
+            .action-container button { width: 85%; margin: 5px 0; }
         }
 
         @media only screen and (max-height: 600px) {
@@ -397,8 +419,11 @@
             <p><span class="welcome-highlight">► HOW IT WORKS:</span><br>
             The Ninja watches the class. If the noise bar hits RED, you lose a heart. Keep it green to earn XP and rank up!</p>
             
+            <p><span class="welcome-highlight">► CRITICAL SETUP:</span><br>
+            Background noise changes daily. You must run <b>"Set Baseline Noise"</b> at the start of EVERY mission.</p>
+            
             <p><span class="welcome-highlight">► IPAD TIP:</span><br>
-            iPads try to cancel background noise. <b>Prop it up</b> (don't lay flat) and run <b>"Set Baseline Noise"</b> for best results.</p>
+            iPads try to cancel background noise. <b>Prop it up</b> (don't lay flat) for best results.</p>
 
             <p><span class="welcome-highlight">► DATA WARNING:</span><br>
             All Class Data and XP is saved <b>ON THIS DEVICE</b>. If you clear your browser cache, the data will vanish.</p>
@@ -459,6 +484,7 @@
                 <p> <b>TIME BONUS:</b> +1 XP every minute.</p>
                 <p> <b>MISSION END:</b> Reach the end for a big bonus.</p>
                 <p> <b>LIVES:</b> 3 hearts per checkpoint.</p>
+                <p> <b>SETUP:</b> Run "Set Baseline" EVERY time.</p>
                 <p> <b>IPAD TIP:</b> Prop up device & Calibrate.</p>
             </div>
             <div id="teacher-intel" class="intel-box" style="display:none;">
@@ -910,7 +936,7 @@
             
             setTimeout(() => {
                 if(!isPaused && document.getElementById('game-container').style.display === 'flex') {
-                      ninja.classList.add('ninja-hidden');
+                       ninja.classList.add('ninja-hidden');
                 }
             }, 5000);
 
