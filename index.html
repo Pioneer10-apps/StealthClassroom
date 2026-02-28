@@ -4,6 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Stealth Classroom</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Gamified classroom noise monitor. Students earn XP for staying quiet!">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Stealth Classroom">
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -30,7 +45,7 @@
             overflow: hidden; /* Default to no scroll for Desktop/iPad */
             user-select: none;
             -webkit-user-select: none;
-            transition: background-image 0.5s ease-in-out;
+            /* TRANSITION REMOVED FOR INSTANT SNAP */
         }
 
         /* --- GLOBAL UI ELEMENTS --- */
@@ -45,8 +60,10 @@
             cursor: pointer; transition: all 0.1s;
             text-transform: uppercase;
         }
+        /* FIX: Use CSS variables here so button hover colours update with theme */
         button:hover { 
-            background-color: #3a4ba0; 
+            background-color: var(--ninja-navy); 
+            filter: brightness(1.3);
             border-color: var(--white); 
             box-shadow: 3px 3px 0px var(--white); 
             transform: translate(-1px, -1px); 
@@ -74,9 +91,10 @@
             align-items: center; 
             height: 100vh;
             margin-top: 0; 
-            padding-top: 80px;
+            /* REDUCED PADDING TO PULL UI UP FOR IPAD LANDSCAPE */
+            padding-top: 30px;
             text-align: center;
-            background-color: rgba(0, 0, 0, 0.5);
+            background-color: transparent;
             box-sizing: border-box;
         }
         #game-container, #results-screen { 
@@ -84,7 +102,7 @@
             justify-content: center; align-items: center; 
             height: 100vh;
             margin-top: 0;
-            background-color: rgba(0, 0, 0, 0.5);
+            background-color: transparent;
         }
 
         /* --- UX FIX: PAIRED HEADER GROUPS (FIX FOR NARROW SCREENS) --- */
@@ -136,7 +154,8 @@
         .logo-box {
             background: transparent; border: none; box-shadow: none; padding: 0; 
             width: 100%; max-width: 850px; 
-            margin-bottom: 20px; margin-top: 0px; 
+            /* REDUCED MARGIN TO PULL CLASS INPUT CLOSER */
+            margin-bottom: 5px; margin-top: 0px; 
             box-sizing: border-box; display: flex; flex-direction: column;
             justify-content: center; align-items: center;
         }
@@ -202,13 +221,6 @@
         
         #arrow-helper { color: var(--gold); font-size: 0.7rem; margin-bottom: 5px; text-shadow: 2px 2px #000; display: none; animation: bounce 1s infinite; }
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
-
-        /* --- SLIDER --- */
-        #vibe-labels { display: flex; justify-content: space-between; width: 420px; font-size: 0.6rem; color: var(--gold); margin-bottom: 5px; letter-spacing: 1px; text-shadow: 2px 2px #000; }
-        .stealth-label { color: var(--green); text-shadow: 0 0 5px var(--green); }
-        input[type=range] { -webkit-appearance: none; width: 420px; margin-bottom: 10px; background: transparent; }
-        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 12px; background: var(--ninja-dark-bg); border: 3px solid var(--gold); }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 24px; width: 12px; background: var(--gold); border: 2px solid var(--white); margin-top: -8px; cursor: pointer; }
 
         /* --- HUD --- */
         #top-hud {
@@ -281,24 +293,42 @@
         #escapeBtn { background-color: var(--orange); border-color: var(--gold); font-size: 0.7rem; padding: 10px 20px; }
         #escapeBtn:hover { border-color: var(--white); background-color: #e65100; }
         
-        /* NEW BUTTON STYLE FOR CALIBRATE MAIN */
-        #calibrate-btn-main {
-            width: 450px; 
-            margin-bottom: 10px; 
-            background-color: var(--ninja-navy);
-            border: 3px solid var(--gold);
-            font-size: 0.7rem;
-            padding: 10px;
+        /* NEW CALIBRATION OVERLAY ON GAME SCREEN */
+        #calibration-overlay-game {
+            display: none;
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.85);
+            border: 4px solid var(--gold);
+            padding: 15px 20px;
+            z-index: 500;
+            text-align: center;
+            width: auto;
+            max-width: 340px;
+            box-shadow: 4px 4px 0px var(--ninja-dark-bg);
         }
-        #calibrate-btn-main.active { background-color: var(--red); border-color: var(--white); animation: pulse 1s infinite; }
-
+        #calibration-overlay-game h2 {
+            color: var(--gold);
+            text-shadow: 2px 2px #000;
+            animation: flash 1s infinite;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+        }
+        #calibration-overlay-game p {
+            color: var(--white);
+            font-size: 0.6rem;
+            line-height: 1.4;
+            margin: 0;
+        }
 
         .gold-heading { color: var(--gold); text-shadow: 3px 3px #000; margin-bottom: 30px; }
         #store-overlay .gold-heading { font-size: 2.5rem; }
 
         /* --- NINJA MASCOT --- */
         #ninja-mascot { 
-            position: fixed; bottom: 80px; left: 30px; 
+            position: fixed; bottom: 80px; left: 174px; 
             width: 300px; 
             image-rendering: pixelated; z-index: 100;
             transition: opacity 1.5s steps(10, end), transform 1.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
@@ -331,10 +361,7 @@
             /* --- RESPONSIVE FIXES FOR PORTRAIT/MOBILE --- */
             /* Ensure Buttons, Inputs, and Sliders have UNIFORM width */
             .input-box, 
-            #calibrate-btn-main, 
-            #startBtn, 
-            input[type=range], 
-            #vibe-labels {
+            #startBtn {
                 width: 85% !important; /* Uniform width for everything */
                 max-width: 400px;
                 box-sizing: border-box; /* Ensures padding doesn't widen element */
@@ -349,6 +376,95 @@
             /* Ensure game action buttons fit side-by-side or stack neatly */
             .action-container { width: 100%; align-items: center; }
             .action-container button { width: 85%; margin: 5px 0; }
+        }
+
+        /* --- THEME LOCK STYLES --- */
+        .theme-lock-badge {
+            display: inline-block;
+            background: var(--gold);
+            color: #000;
+            font-family: var(--pixel-font);
+            font-size: 0.45rem;
+            padding: 2px 6px;
+            margin-left: 8px;
+            vertical-align: middle;
+            letter-spacing: 0.5px;
+        }
+
+        /* --- PAYWALL OVERLAY --- */
+        #paywall-overlay {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 5000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        #paywall-overlay .ui-card {
+            max-width: 500px;
+            text-align: center;
+        }
+        .paywall-themes {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .paywall-theme-chip {
+            background: var(--ninja-dark-bg);
+            border: 2px solid var(--gold);
+            padding: 10px 14px;
+            font-size: 0.55rem;
+            color: var(--white);
+        }
+        .paywall-price {
+            font-size: 2rem;
+            color: var(--gold);
+            text-shadow: 3px 3px #000;
+            margin: 15px 0;
+        }
+        .paywall-sub {
+            font-size: 0.55rem;
+            color: #aaa;
+            margin-bottom: 20px;
+            line-height: 1.8;
+        }
+        #stripe-checkout-btn {
+            background: linear-gradient(135deg, #f5a623, #f7c369);
+            color: #000;
+            border: 3px solid #000;
+            font-size: 0.85rem;
+            padding: 18px 40px;
+            cursor: pointer;
+            font-family: var(--pixel-font);
+            width: 100%;
+            margin-bottom: 10px;
+            box-shadow: 4px 4px 0 #000;
+            transition: all 0.1s;
+        }
+        #stripe-checkout-btn:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 #000; }
+        #stripe-checkout-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #000; }
+        .paywall-restore {
+            font-size: 0.5rem;
+            color: var(--gold);
+            cursor: pointer;
+            text-decoration: underline;
+            margin-top: 10px;
+            display: block;
+        }
+        #unlock-banner {
+            display: none;
+            background: var(--green);
+            color: #000;
+            padding: 12px;
+            font-size: 0.6rem;
+            text-align: center;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 6000;
+            font-family: var(--pixel-font);
         }
 
         @media only screen and (max-height: 600px) {
@@ -370,10 +486,6 @@
 
             .input-box { width: 80%; padding: 8px; margin-bottom: 5px; font-size: 0.6rem; }
             select.input-box { height: 35px; } /* Force height on dropdown */
-            
-            #calibrate-btn-main { width: 80%; padding: 5px; margin-bottom: 5px; }
-            input[type=range] { width: 80%; margin-bottom: 5px; }
-            #vibe-labels { width: 80%; }
             
             #startBtn { padding: 10px 20px; font-size: 1rem; margin-top: 10px; }
 
@@ -401,6 +513,36 @@
 </head>
 <body>
 
+    <!-- Unlock Success Banner -->
+    <div id="unlock-banner">🎉 THEMES UNLOCKED! ALL THEME PACKS ARE NOW AVAILABLE! 🎉</div>
+
+    <!-- Paywall Overlay -->
+    <div id="paywall-overlay">
+        <div class="ui-card">
+            <h2 class="gold-heading" style="font-size:1.5rem;">🔒 THEME BUNDLE</h2>
+            <p style="font-size:0.6rem; color:#ddd; line-height:1.8; margin-bottom:10px;">Unlock 3 extra theme packs for your classroom!</p>
+            <div class="paywall-themes">
+                <div class="paywall-theme-chip">🦕 JURASSIC JUNGLE</div>
+                <div class="paywall-theme-chip">🍬 CANDY LAND</div>
+                <div class="paywall-theme-chip">🎅 STEALTH SANTA</div>
+            </div>
+            <div class="paywall-price">$5 <span style="font-size:0.6rem; color:#aaa;">one-time</span></div>
+            <p class="paywall-sub">
+                ✔ All 3 theme packs forever<br>
+                ✔ New themes added free<br>
+                ✔ Supports the dev ❤️
+            </p>
+            <!-- Replace the href below with your actual Stripe Payment Link -->
+            <button id="stripe-checkout-btn" onclick="goToCheckout()">
+                🛒 UNLOCK ALL THEMES - $5
+            </button>
+            <p class="paywall-sub" style="font-size:0.45rem; margin-top:5px;">Secure payment via Stripe</p>
+            <span class="paywall-restore" onclick="restorePurchase()">Already paid? Restore purchase</span>
+            <br>
+            <button onclick="closePaywall()" style="margin-top:20px; font-size:0.55rem; padding:10px 20px; background:transparent; border-color:#555; color:#aaa;">CLOSE</button>
+        </div>
+    </div>
+
     <div class="top-left-group">
         <button id="store-toggle-btn" class="top-btn" onclick="toggleStore(true)">XP STORE</button>
         <button id="leaderboard-toggle-btn" class="top-btn" onclick="toggleLeaderboard(true)">RANKINGS</button>
@@ -414,13 +556,13 @@
     <div id="welcome-overlay">
         <div class="ui-card welcome-text">
             <h2 class="gold-heading">STEALTH CLASSROOM</h2>
-            <p>Welcome, Sensei. This tool helps your students master the art of silence.</p>
+            <p><span id="txt-welcome">Welcome, Teacher.</span> This tool helps your students master the art of silence.</p>
             
             <p><span class="welcome-highlight">► HOW IT WORKS:</span><br>
-            The Ninja watches the class. If the noise bar hits RED, you lose a heart. Keep it green to earn XP and rank up!</p>
+            <span id="txt-watcher">The app watches the class.</span> If the noise bar hits RED, you lose a heart. Keep it green to earn XP and rank up!</p>
             
             <p><span class="welcome-highlight">► CRITICAL SETUP:</span><br>
-            Background noise changes daily. You must run <b>"Set Baseline Noise"</b> at the start of EVERY mission.</p>
+            The app will automatically calibrate to your room's background noise during the first 5 seconds of the mission. Just get them quiet and hit start!</p>
             
             <p><span class="welcome-highlight">► IPAD TIP:</span><br>
             iPads try to cancel background noise. <b>Prop it up</b> (don't lay flat) for best results.</p>
@@ -455,7 +597,7 @@
             </div>
 
             <div id="manual-xp-panel">
-                <h3 style="font-size: 0.6rem; color: var(--gold);">SENSEI! MANUAL XP ENTRY</h3>
+                <h3 style="font-size: 0.6rem; color: var(--gold);"><span id="txt-master">TEACHER</span>! MANUAL XP ENTRY</h3>
                 <p style="font-size: 0.4rem; color: #ccc; margin-bottom: 5px;">(Use this to sync from another device)</p>
                 <input type="number" id="manualXPInput" class="restock-input" placeholder="XP TO ADD">
                 <button onclick="manualAddXP()" style="font-size: 0.5rem; width: 100%; background: var(--green); margin-top: 5px;">SYNC / ADD XP</button>
@@ -484,7 +626,7 @@
                 <p> <b>TIME BONUS:</b> +1 XP every minute.</p>
                 <p> <b>MISSION END:</b> Reach the end for a big bonus.</p>
                 <p> <b>LIVES:</b> 3 hearts per checkpoint.</p>
-                <p> <b>SETUP:</b> Run "Set Baseline" EVERY time.</p>
+                <p> <b>SETUP:</b> Automatic 5-second calibration at start.</p>
                 <p> <b>IPAD TIP:</b> Prop up device & Calibrate.</p>
             </div>
             <div id="teacher-intel" class="intel-box" style="display:none;">
@@ -499,13 +641,23 @@
 
     <div id="setup-screen">
         <div class="logo-box">
-            <img src="banner.png" alt="Stealth Classroom">
+            <img id="main-banner" src="banner.png" alt="Stealth Classroom">
         </div>
         
         <div id="class-directory"></div>
         <div id="arrow-helper">⬆ SELECT EXISTING ⬆</div>
         <input type="text" id="classInput" class="input-box" placeholder="ENTER CLASS OR SELECT EXISTING">
         
+        <div style="margin-bottom: 10px; width: 100%; display: flex; flex-direction: column; align-items: center;">
+            <label style="color: var(--gold); font-size: 0.6rem; margin-bottom: 5px;">SELECT THEME</label>
+            <select id="themeSelector" class="input-box" onchange="handleThemeChange(this.value)">
+                <option value="ninja">⚔️ NINJA DOJO (FREE)</option>
+                <option value="jungle">🦕 JURASSIC JUNGLE 🔒</option>
+                <option value="candy">🍬 CANDY LAND 🔒</option>
+                <option value="santa">🎅 STEALTH SANTA 🔒</option>
+            </select>
+            <p id="theme-unlock-hint" style="display:none; font-size:0.5rem; color: var(--gold); margin-top:5px; cursor:pointer;" onclick="openPaywall()">🔒 Unlock all themes for $5 →</p>
+        </div>
         <select id="timeInput" class="input-box">
             <option value="0.5">30 SECONDS (TEST)</option>
             <option value="5">5 MINUTES</option>
@@ -516,17 +668,7 @@
             <option value="60">60 MINUTES</option>
         </select>
         
-        <div style="margin-top: 10px; width: 100%; display: flex; flex-direction: column; align-items: center;">
-            <button id="calibrate-btn-main" onclick="runCalibration()">SET BASELINE NOISE</button>
-            <div id="vibe-labels">
-                <span class="stealth-label">STEALTH SILENCE</span>
-                <span>COLLABORATION</span>
-            </div>
-            <input type="range" id="sensitivity" min="10" max="80" value="35" step="5">
-            <div style="font-size: 0.8rem; margin-bottom: 20px; color: var(--gold); text-shadow: 2px 2px #000;">THRESHOLD: <span id="thresh-val">35</span></div>
-        </div>
-        
-        <button id="startBtn" onclick="startMission()" style="font-size: 1.2rem; padding: 15px 40px;">START MISSION</button>
+        <button id="startBtn" onclick="startMission()" style="font-size: 1.2rem; padding: 15px 40px; margin-top: 20px;">START MISSION</button>
     </div>
 
     <div id="game-container">
@@ -542,6 +684,12 @@
             </div>
         </div>
         <div id="mission-center">
+            
+            <div id="calibration-overlay-game">
+                <h2>SHHH... CALIBRATING</h2>
+                <p>Calibrating perfect silence.<br>Mission starts automatically.</p>
+            </div>
+
             <div id="xp-lost-sign">XP LOST!</div>
             <div id="bonus-sign"> BONUS XP ZONE </div>
             <div id="progress-wrapper">
@@ -579,7 +727,18 @@
 
     <img id="ninja-mascot" src="ninja1.png" alt="Ninja">
 
-    <img src="background3.png" style="display: none;" alt="preload">
+    <div style="display: none;">
+        <img src="background.png"><img src="background2.png"><img src="background3.png">
+        <img src="ninja1.png"><img src="ninja2.png"><img src="done.png"><img src="banner.png">
+        
+        <img src="jungle1.png"><img src="jungle2.png"><img src="jungle3.png">
+        <img src="dino1.png"><img src="dino2.png"><img src="dino_done.png"><img src="dinobanner.png">
+        
+        <img src="candy1.png"><img src="candy2.png"><img src="candy3.png">
+        <img src="bear1.png"><img src="bear2.png"><img src="bear_done.png"><img src="candybanner.png">
+        <img src="santabackground1.png"><img src="santabackground2.png"><img src="santabackground3.png">
+        <img src="santa1.png"><img src="santa2.png"><img src="santadone.png"><img src="santabanner.png">
+    </div>
 
     <script>
         let audioContext, analyser, microphone;
@@ -589,21 +748,179 @@
         
         let flag1Claimed = false, flag2Claimed = false, completionXPClaimed = false;
         let minutesTracked = 0; 
+        
+        // --- NEW VARIABLES FOR XP LOGIC & AUTO CALIBRATION ---
+        let minutesAtLastCheckpoint = 0;
+        let hasDied = false; 
+        let currentThemeName = "ninja"; 
+        let isCalibrating = false;
+
+        // *** FIX 1: Token to cancel stale mascot cycles on theme change ***
+        let mascotCycleToken = null;
 
         const h = '<i class="pixel-icon pixel-heart"></i>'; 
         const x = '<i class="pixel-icon pixel-cross"></i>'; 
         const heartIcons = [ h+h+h, h+h+x, h+x+x, x+x+x ];
 
-        const ranks = [
-            { threshold: 1000, name: "BLACK BELT", color: "#333333" },
-            { threshold: 500, name: "RED BELT", color: "#f44336" },
-            { threshold: 250, name: "BLUE BELT", color: "#2196f3" },
-            { threshold: 100, name: "GREEN BELT", color: "#4caf50" },
-            { threshold: 50, name: "YELLOW BELT", color: "#ffeb3b" },
-            { threshold: 0, name: "WHITE BELT", color: "#ffffff" }
-        ];
+        // --- THEME DATA WITH RANKS & TEXT ---
+        const themes = {
+            ninja: {
+                bg_setup: "background.png", 
+                bg_game: "background2.png", 
+                bg_win: "background3.png", 
+                mascot: "ninja1.png", 
+                mascot_blink: "ninja2.png", 
+                win_image: "done.png", 
+                banner: "banner.png",
+                colors: {
+                    "--ninja-navy": "#2a3b90",
+                    "--ninja-dark-bg": "#1a1a2e",
+                    "--gold": "#ffd700",
+                    "--green": "#4caf50",
+                    "--red": "#f44336"
+                },
+                text: {
+                    welcome: "Welcome, Teacher.",
+                    watcher: "The app watches the class.",
+                    master: "TEACHER",
+                    stealth: "STEALTH SILENCE",
+                    clan: "CLAN"
+                },
+                ranks: [
+                    { threshold: 1000, name: "BLACK BELT", color: "#333333" },
+                    { threshold: 500, name: "RED BELT", color: "#f44336" },
+                    { threshold: 250, name: "BLUE BELT", color: "#2196f3" },
+                    { threshold: 100, name: "GREEN BELT", color: "#4caf50" },
+                    { threshold: 50, name: "YELLOW BELT", color: "#ffeb3b" },
+                    { threshold: 0, name: "WHITE BELT", color: "#ffffff" }
+                ]
+            },
+            jungle: {
+                bg_setup: "jungle1.png", 
+                bg_game: "jungle2.png", 
+                bg_win: "jungle3.png", 
+                mascot: "dino1.png", 
+                mascot_blink: "dino2.png", 
+                win_image: "dino_done.png", 
+                banner: "dinobanner.png",
+                colors: {
+                    "--ninja-navy": "#2e7d32", 
+                    "--ninja-dark-bg": "#1b5e20", 
+                    "--gold": "#ffeb3b", 
+                    "--green": "#76ff03", 
+                    "--red": "#d50000"
+                },
+                text: {
+                    welcome: "Welcome, Ranger.",
+                    watcher: "The T-Rex is hunting.",
+                    master: "RANGER",
+                    stealth: "HUNTER QUIET",
+                    clan: "PACK"
+                },
+                ranks: [
+                    { threshold: 1000, name: "T-REX KING", color: "#d50000" },
+                    { threshold: 500, name: "RAPTOR", color: "#ff6d00" },
+                    { threshold: 250, name: "HUNTER", color: "#2e7d32" },
+                    { threshold: 100, name: "SCAVENGER", color: "#8bc34a" },
+                    { threshold: 50, name: "HATCHLING", color: "#ffeb3b" },
+                    { threshold: 0, name: "DINO EGG", color: "#ffffff" }
+                ]
+            },
+            candy: {
+                bg_setup: "candy1.png", 
+                bg_game: "candy2.png", 
+                bg_win: "candy3.png", 
+                mascot: "bear1.png", 
+                mascot_blink: "bear2.png", 
+                win_image: "bear_done.png", 
+                banner: "candybanner.png",
+                colors: {
+                    "--ninja-navy": "#d81b60", 
+                    "--ninja-dark-bg": "#880e4f", 
+                    "--gold": "#00bcd4", 
+                    "--green": "#ff4081", 
+                    "--red": "#c2185b"
+                },
+                text: {
+                    welcome: "Welcome, Baker.",
+                    watcher: "Don't wake the Jelly Bears.",
+                    master: "BAKER",
+                    stealth: "SUGAR SOFT",
+                    clan: "SQUAD"
+                },
+                ranks: [
+                    { threshold: 1000, name: "CANDY KING", color: "#d81b60" },
+                    { threshold: 500, name: "DONUT", color: "#c2185b" },
+                    { threshold: 250, name: "CUPCAKE", color: "#00bcd4" },
+                    { threshold: 100, name: "LOLLIPOP", color: "#ff4081" },
+                    { threshold: 50, name: "JELLY BEAN", color: "#ffeb3b" },
+                    { threshold: 0, name: "SUGAR CRUMB", color: "#ffffff" }
+                ]
+            },
+            santa: {
+                bg_setup: "santabackground1.png",
+                bg_game: "santabackground2.png",
+                bg_win: "santabackground3.png",
+                mascot: "santa1.png",
+                mascot_blink: "santa2.png",
+                win_image: "santadone.png",
+                banner: "santabanner.png",
+                colors: {
+                    "--ninja-navy": "#b71c1c",
+                    "--ninja-dark-bg": "#7f0000",
+                    "--gold": "#ffd700",
+                    "--green": "#43a047",
+                    "--red": "#e53935"
+                },
+                text: {
+                    welcome: "Welcome, Santa's Helper.",
+                    watcher: "Santa is watching the class.",
+                    master: "ELF",
+                    stealth: "SANTA STEALTH",
+                    clan: "CREW"
+                },
+                ranks: [
+                    { threshold: 1000, name: "HEAD ELF", color: "#ffd700" },
+                    { threshold: 500, name: "SENIOR ELF", color: "#43a047" },
+                    { threshold: 250, name: "JUNIOR ELF", color: "#ef5350" },
+                    { threshold: 100, name: "ELF TRAINEE", color: "#ff8f00" },
+                    { threshold: 50, name: "NAUGHTY", color: "#bdbdbd" },
+                    { threshold: 0, name: "ON THE LIST", color: "#ffffff" }
+                ]
+            }
+        };
 
-        function getRankInfo(xp) { return ranks.find(r => xp >= r.threshold); }
+        function applyTheme(themeName) {
+            currentThemeName = themeName;
+            const theme = themes[themeName];
+            const root = document.documentElement;
+
+            // Apply Colors
+            for (const [key, value] of Object.entries(theme.colors)) {
+                root.style.setProperty(key, value);
+            }
+
+            // Apply Banner
+            document.getElementById('main-banner').src = theme.banner;
+
+            // Apply Text Updates
+            document.getElementById('txt-welcome').innerText = theme.text.welcome;
+            document.getElementById('txt-watcher').innerText = theme.text.watcher;
+            document.getElementById('txt-master').innerText = theme.text.master;
+            // NOTE: txt-stealth removed — that element doesn't exist in the HTML
+
+            // Apply background
+            document.body.style.backgroundImage = `url('${theme.bg_setup}')`;
+
+            // *** FIX 2: Immediately swap mascot image and restart cycle ***
+            document.getElementById('ninja-mascot').src = theme.mascot;
+            startNinjaCycle();
+        }
+
+        // Helper to get rank from the CURRENT active theme
+        function getRankInfo(xp) { 
+            return themes[currentThemeName].ranks.find(r => xp >= r.threshold); 
+        }
 
         const defaultStoreItems = [
             { name: "10 Mins Free Time", cost: 150 },
@@ -611,10 +928,11 @@
             { name: "No Homework Pass", cost: 300 }
         ];
 
-        // --- INIT & NINJA SWAP LOGIC ---
+        // --- INIT ---
         window.onload = function() { 
             checkFirstVisit();
             updateDirectoryUI(); 
+            updateThemeSelectorLocks();
             if(!localStorage.getItem('ninja_store_items')) {
                 localStorage.setItem('ninja_store_items', JSON.stringify(defaultStoreItems));
             }
@@ -644,31 +962,33 @@
             document.getElementById('welcome-overlay').style.display = 'none';
         }
 
-        // Ninja Loop (7s Ninja1 -> 3s Ninja2)
+        // *** FIX 3: Token-based cycle so old loops self-cancel on theme change ***
         function startNinjaCycle() {
+            const myToken = {};
+            mascotCycleToken = myToken;
+
             const ninja = document.getElementById('ninja-mascot');
-            
+
             function showNinja1() {
-                // Check if game has started (setup screen hidden). If so, stop loop.
-                if(document.getElementById('setup-screen').style.display === 'none') return; 
-                ninja.src = 'ninja1.png';
+                if (mascotCycleToken !== myToken) return; // stale cycle, stop
+                if (document.getElementById('setup-screen').style.display === 'none') return; 
+                ninja.src = themes[currentThemeName].mascot;
                 setTimeout(showNinja2, 7000);
             }
 
             function showNinja2() {
-                // Check if game has started (setup screen hidden). If so, stop loop.
-                if(document.getElementById('setup-screen').style.display === 'none') return;
-                ninja.src = 'ninja2.png';
+                if (mascotCycleToken !== myToken) return; // stale cycle, stop
+                if (document.getElementById('setup-screen').style.display === 'none') return;
+                ninja.src = themes[currentThemeName].mascot_blink;
                 setTimeout(showNinja1, 3000);
             }
 
-            // Start the cycle
             showNinja1();
         }
 
         function shareWithTeachers() {
             const subject = encodeURIComponent("You have to try this noise monitor");
-            const body = encodeURIComponent("Hi Sensei,\n\nI've been using this tool called Stealth Classroom to help manage noise levels in my classroom. It's gamified—students earn XP and level up through ninja belts while mastering the art of silence. It has made my transitions so much smoother!\n\nYou can try it here: www.stealthclassroom.com\n\nHope it helps your classroom as much as it has mine!");
+            const body = encodeURIComponent("Hi there,\n\nI've been using this tool called Stealth Classroom to help manage noise levels in my classroom. It's gamified—students earn XP and level up while mastering the art of silence. It has made my transitions so much smoother!\n\nYou can try it here: www.stealthclassroom.com\n\nHope it helps your classroom as much as it has mine!");
             window.location.href = `mailto:?subject=${subject}&body=${body}`;
         }
 
@@ -684,45 +1004,6 @@
             intel.style.display = intel.style.display === 'block' ? 'none' : 'block';
             btn.innerText = intel.style.display === 'block' ? "CLOSE INTEL" : "TOP SECRET TEACHER INTEL";
         }
-
-        async function runCalibration() {
-            const btn = document.getElementById('calibrate-btn-main');
-            btn.innerText = "LISTENING..."; btn.classList.add('active'); btn.disabled = true;
-
-            if (!audioContext) {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    audioContext = new AudioContext();
-                    analyser = audioContext.createAnalyser();
-                    microphone = audioContext.createMediaStreamSource(stream);
-                    analyser.fftSize = 256;
-                    microphone.connect(analyser);
-                } catch(e) { alert("Mic required!"); return; }
-            }
-
-            let samples = [], count = 0;
-            const interval = setInterval(() => {
-                const dataArray = new Uint8Array(analyser.frequencyBinCount);
-                analyser.getByteFrequencyData(dataArray);
-                let volume = dataArray.reduce((a, b) => a + b) / dataArray.length;
-                samples.push(volume); count++;
-
-                if (count >= 50) {
-                    clearInterval(interval);
-                    let avg = samples.reduce((a, b) => a + b) / samples.length;
-                    currentThreshold = Math.max(15, Math.min(Math.round(avg + 15), 80));
-                    document.getElementById('sensitivity').value = currentThreshold;
-                    document.getElementById('thresh-val').innerText = currentThreshold;
-                    btn.innerText = "READY!"; btn.classList.remove('active'); btn.disabled = false;
-                    setTimeout(() => { btn.innerText = "SET BASELINE NOISE"; }, 3000);
-                }
-            }, 100);
-        }
-
-        document.getElementById('sensitivity').oninput = function() {
-            currentThreshold = this.value;
-            document.getElementById('thresh-val').innerText = this.value;
-        };
 
         function toggleLeaderboard(show) {
             const overlay = document.getElementById('leaderboard-overlay');
@@ -823,7 +1104,7 @@
             document.getElementById('manualXPInput').value = "";
             document.getElementById('store-wallet').innerText = stats.totalXP;
             document.getElementById('store-class-info').innerText = `CLASS: ${classInput.toUpperCase()} - XP: ${stats.totalXP}`;
-            alert(`SENSEI SUCCESS! XP updated.`);
+            alert(`SUCCESS! XP updated.`);
         }
 
         function toggleRestockPanel() {
@@ -900,8 +1181,8 @@
         }
 
         async function startMission() {
-            // SWITCH BACKGROUND
-            document.body.style.backgroundImage = "url('background2.png')";
+            // SWITCH BACKGROUND (Use GAME BG from current theme)
+            document.body.style.backgroundImage = `url('${themes[currentThemeName].bg_game}')`;
 
             currentClassName = document.getElementById('classInput').value.trim() || "GUEST";
             let key = 'ninja_' + currentClassName.toUpperCase();
@@ -911,7 +1192,9 @@
             isBonusZone = false; lastTimestamp = 0;
             flag1Claimed = false; flag2Claimed = false; completionXPClaimed = false;
             minutesTracked = 0;
-            
+            minutesAtLastCheckpoint = 0;
+            hasDied = false;
+
             document.getElementById('total-xp-val').innerText = history.totalXP;
             document.getElementById('streak-val').innerText = history.streak;
             document.getElementById('xp').innerText = "0";
@@ -925,13 +1208,16 @@
             // Ensure we hide the new top groups too
             document.querySelectorAll('.top-left-group, .top-right-group').forEach(g => g.style.display = 'none');
             
-            // ENSURE QUIET NINJA IS SHOWN FOR GAME
+            // *** FIX: Cancel mascot cycle now that game is starting ***
+            mascotCycleToken = null;
+
+            // ENSURE QUIET MASCOT IS SHOWN FOR GAME
             const ninja = document.getElementById('ninja-mascot');
-            ninja.src = 'ninja3.png';
+            ninja.src = themes[currentThemeName].mascot; // Use active theme
             ninja.style.transition = ''; // Ensure transition is reset for start
             ninja.classList.remove('ninja-hidden');
             
-            // --- MOVE NINJA3 UP 1/3 OF THE SCREEN ---
+            // --- MOVE MASCOT UP 1/3 OF THE SCREEN ---
             ninja.style.bottom = '33vh'; 
             
             setTimeout(() => {
@@ -939,6 +1225,10 @@
                        ninja.classList.add('ninja-hidden');
                 }
             }, 5000);
+
+            // --- AUTO CALIBRATION ON START ---
+            isCalibrating = true;
+            document.getElementById('calibration-overlay-game').style.display = 'block';
 
             if (!audioContext) {
                 try {
@@ -952,16 +1242,45 @@
             } else if (audioContext.state === 'suspended') {
                 await audioContext.resume();
             }
+
+            // 5 SECOND CALIBRATION LOOP
+            let samples = [], count = 0;
+            const interval = setInterval(() => {
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(dataArray);
+                let volume = dataArray.reduce((a, b) => a + b) / dataArray.length;
+                samples.push(volume); count++;
+
+                if (count >= 50) { // 50 ticks * 100ms = 5 seconds
+                    clearInterval(interval);
+                    let avg = samples.reduce((a, b) => a + b) / samples.length;
+                    currentThreshold = Math.max(15, Math.min(Math.round(avg + 15), 80));
+                    
+                    // Hide overlay and allow game loop to start tracking time
+                    isCalibrating = false;
+                    document.getElementById('calibration-overlay-game').style.display = 'none';
+                    lastTimestamp = performance.now(); // Reset time to prevent sudden jump
+                }
+            }, 100);
+
             requestAnimationFrame(gameLoop);
         }
 
         function gameLoop(timestamp) {
             if (document.getElementById('game-container').style.display !== 'flex') return;
+            
+            // WAIT FOR CALIBRATION TO FINISH BEFORE TRACKING TIME OR STRIKES
+            if (isCalibrating) {
+                lastTimestamp = timestamp; // Keep time anchored
+                requestAnimationFrame(gameLoop);
+                return;
+            }
+
             if (!lastTimestamp) lastTimestamp = timestamp;
             const deltaTime = (timestamp - lastTimestamp) / 1000;
             lastTimestamp = timestamp;
 
-            if (!isPaused && (strikes < 3 || isBonusZone)) {
+            if (!isPaused && !isCalibrating && (strikes < 3 || isBonusZone)) {
                 elapsedSeconds += deltaTime;
                 if (analyser) {
                     const dataArray = new Uint8Array(analyser.frequencyBinCount);
@@ -1007,10 +1326,8 @@
             document.getElementById('progress-bar').style.width = (progress * 100) + "%";
             
             // --- SCALING REWARD LOGIC ---
-            // Calculate minutes passed
             let currentMins = Math.floor(elapsedSeconds / 60);
             if (currentMins > minutesTracked) {
-                // Add 1 XP for the new minute
                 sessionXP += 1;
                 minutesTracked = currentMins;
                 flashXPUpdate();
@@ -1019,16 +1336,18 @@
             if (progress >= 0.33) {
                 document.getElementById('flag1').classList.replace('flag-red', 'flag-green');
                 if (!flag1Claimed) { 
-                    // ADDED: Bonus based on minutes tracked so far
-                    sessionXP += minutesTracked; 
+                    let rangeBonus = minutesTracked - minutesAtLastCheckpoint;
+                    sessionXP += rangeBonus; 
+                    minutesAtLastCheckpoint = minutesTracked;
                     flag1Claimed = true; flashXPUpdate(); 
                 }
             }
             if (progress >= 0.66) {
                 document.getElementById('flag2').classList.replace('flag-red', 'flag-green');
                 if (!flag2Claimed) { 
-                    // ADDED: Bonus based on minutes tracked so far
-                    sessionXP += minutesTracked; 
+                    let rangeBonus = minutesTracked - minutesAtLastCheckpoint;
+                    sessionXP += rangeBonus; 
+                    minutesAtLastCheckpoint = minutesTracked;
                     flag2Claimed = true; flashXPUpdate(); 
                 }
             }
@@ -1038,8 +1357,14 @@
                 document.getElementById('finishBtn').style.display = 'block';
                 document.getElementById('timer-label').innerText = "BONUS:";
                 if (!completionXPClaimed) { 
-                    // ADDED: Double completion bonus (2x total minutes)
-                    sessionXP += (minutesTracked * 2); 
+                    let rangeBonus = minutesTracked - minutesAtLastCheckpoint;
+                    sessionXP += rangeBonus;
+                    
+                    if(!hasDied) {
+                         sessionXP += 5; // PERFECT RUN BONUS
+                         alert("PERFECT RUN BONUS: +5 XP!");
+                    }
+                    
                     completionXPClaimed = true; flashXPUpdate(); 
                 }
             }
@@ -1059,13 +1384,14 @@
             strikes++;
             document.getElementById('hearts').innerHTML = heartIcons[strikes] || heartIcons[3];
             if (strikes >= 3) {
+                hasDied = true; // Mark as failed perfect run
                 isPaused = true;
                 setTimeout(() => {
                     elapsedSeconds = (elapsedSeconds >= duration * 0.66) ? duration * 0.66 : (elapsedSeconds >= duration * 0.33) ? duration * 0.33 : 0;
                     strikes = 0; isPaused = false;
                     document.getElementById('hearts').innerHTML = heartIcons[0];
-                    // Also reset minutes tracked if time jumps back
                     minutesTracked = Math.floor(elapsedSeconds / 60);
+                    minutesAtLastCheckpoint = minutesTracked;
                 }, 1000);
             }
         }
@@ -1082,7 +1408,6 @@
         }
         
         function escapeMission() {
-            // Confirm exit
             if(confirm("ESCAPE EARLY? You will keep your current XP and Streak.")) {
                 endSession();
             }
@@ -1109,21 +1434,22 @@
             document.getElementById('game-container').style.display = 'none';
             document.getElementById('results-screen').style.display = 'flex';
             
-            document.body.style.backgroundImage = "url('background3.png')"; // SWITCH TO FINAL BG
+            // SWITCH TO WIN BG (Using current theme)
+            document.body.style.backgroundImage = `url('${themes[currentThemeName].bg_win}')`;
 
-            // CHANGE MASCOT TO DONE.PNG
+            // CHANGE MASCOT TO WIN IMAGE (Using current theme)
             const mascot = document.getElementById('ninja-mascot');
-            mascot.src = 'done.png'; 
+            mascot.src = themes[currentThemeName].win_image; 
             mascot.classList.remove('ninja-hidden'); 
 
-            // --- UPDATED: MOVE CENTRAL, REDUCE SIZE ---
-            mascot.style.width = '225px'; 
-            mascot.style.left = '28%';    // Moved centrally over the box
+            // --- MOVE CENTRAL, REDUCE SIZE ---
+            mascot.style.width = '300px'; 
+            mascot.style.left = '28%';
             mascot.style.bottom = '15%';  
 
-            // --- UPDATED: 5 SECONDS THEN INSTANT VANISH ---
+            // --- 5 SECONDS THEN INSTANT VANISH ---
             setTimeout(() => {
-                mascot.style.transition = 'none'; // Ensure instant vanish
+                mascot.style.transition = 'none';
                 mascot.classList.add('ninja-hidden');
             }, 5000);
             
@@ -1131,16 +1457,122 @@
             rankDisplay.innerText = "RANK: " + newRankInfo.name;
             rankDisplay.style.color = newRankInfo.color;
 
+            // USE THEME-SPECIFIC WORD FOR "CLAN"
+            const groupName = themes[currentThemeName].text.clan;
+
             let missionMessage = `MISSION SUCCESS! YOU EARNED ${finalXPAdded} XP. MISSION STREAK: ${data.streak}.`;
             if (isRankUp) {
-                missionMessage = `🎉 GRADING PASSED! 🎉\nTHE ${currentClassName.toUpperCase()} CLAN IS NOW ${newRankInfo.name}!\n\n` + missionMessage;
+                missionMessage = `🎉 GRADING PASSED! 🎉\nTHE ${currentClassName.toUpperCase()} ${groupName} IS NOW ${newRankInfo.name}!\n\n` + missionMessage;
                 rankDisplay.classList.add('rank-up-active'); 
             } else { rankDisplay.classList.remove('rank-up-active'); }
 
             document.getElementById('typewriter-text').innerText = missionMessage;
         }
 
-        function toggleBriefing(show) { document.getElementById('briefing-overlay').style.display = show ? 'flex' : 'none'; }
+    <!-- ===================== PWA: SERVICE WORKER ===================== -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(reg => {
+                    console.log('SW registered:', reg.scope);
+                }).catch(err => {
+                    console.warn('SW registration failed:', err);
+                });
+            });
+        }
     </script>
+
+    <!-- ===================== PAYWALL & THEME UNLOCK ===================== -->
+    <script>
+        // ---- STRIPE PAYMENT LINK ----
+        // Replace this with your actual Stripe Payment Link URL
+        // You can create one at https://dashboard.stripe.com/payment-links
+        // After successful payment, redirect the user to:
+        //   yourdomain.com/?unlock=STEALTH_THEMES_2024
+        // Then this script will auto-detect it and unlock themes.
+        const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/YOUR_PAYMENT_LINK_HERE';
+        const UNLOCK_KEY = 'stealthClassroom_themesUnlocked';
+        const UNLOCK_CODE = 'STEALTH_THEMES_2024'; // Must match your Stripe redirect param
+
+        function areThemesUnlocked() {
+            return localStorage.getItem(UNLOCK_KEY) === 'true';
+        }
+
+        function unlockThemes() {
+            localStorage.setItem(UNLOCK_KEY, 'true');
+            updateThemeSelectorLocks();
+            document.getElementById('paywall-overlay').style.display = 'none';
+            const banner = document.getElementById('unlock-banner');
+            banner.style.display = 'block';
+            setTimeout(() => { banner.style.display = 'none'; }, 4000);
+        }
+
+        function updateThemeSelectorLocks() {
+            const unlocked = areThemesUnlocked();
+            const selector = document.getElementById('themeSelector');
+            const hint = document.getElementById('theme-unlock-hint');
+            if (unlocked) {
+                selector.options[1].text = '🦕 JURASSIC JUNGLE';
+                selector.options[2].text = '🍬 CANDY LAND';
+                selector.options[3].text = '🎅 STEALTH SANTA';
+                if (hint) hint.style.display = 'none';
+            } else {
+                if (hint) hint.style.display = 'block';
+            }
+        }
+
+        function handleThemeChange(value) {
+            if (value !== 'ninja' && !areThemesUnlocked()) {
+                // Reset to ninja
+                document.getElementById('themeSelector').value = 'ninja';
+                openPaywall();
+                return;
+            }
+            applyTheme(value);
+        }
+
+        function openPaywall() {
+            document.getElementById('paywall-overlay').style.display = 'flex';
+        }
+
+        function closePaywall() {
+            document.getElementById('paywall-overlay').style.display = 'none';
+        }
+
+        function goToCheckout() {
+            // Opens Stripe payment link in new tab
+            // Configure your Stripe link to redirect back with ?unlock=STEALTH_THEMES_2024
+            window.open(STRIPE_PAYMENT_LINK, '_blank');
+        }
+
+        function restorePurchase() {
+            // Check URL param (from Stripe redirect)
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('unlock') === UNLOCK_CODE) {
+                unlockThemes();
+                alert('✅ Purchase restored! All themes are now unlocked.');
+            } else {
+                // Ask user to re-visit from their purchase confirmation link
+                const code = prompt('Enter your unlock code from your purchase email:');
+                if (code && code.trim().toUpperCase() === UNLOCK_CODE) {
+                    unlockThemes();
+                    alert('✅ Themes unlocked! Enjoy all theme packs.');
+                } else {
+                    alert('Code not found. Check your purchase confirmation email.\nNeed help? Contact: support@stealthclassroom.com');
+                }
+            }
+        }
+
+        // Auto-detect Stripe redirect unlock on page load
+        (function checkUnlockParam() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('unlock') === UNLOCK_CODE) {
+                unlockThemes();
+                // Clean URL
+                window.history.replaceState({}, '', window.location.pathname);
+            }
+        })();
+    </script>
+
 </body>
 </html>

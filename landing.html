@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stealth Classroom — Gamified Silence for the Classroom</title>
+  <meta name="description" content="Turn classroom silence into a game. Students earn XP, rank up, and unlock rewards — all while you get the quiet you need.">
+  <meta name="theme-color" content="#1a1a2e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="icon" type="image/png" sizes="96x96" href="favicon-96x96.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="manifest" href="site.webmanifest">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+  <script src="https://js.stripe.com/v3/"></script>
+  <style>
+    :root {
+      --navy:   #0d0f2b;
+      --deep:   #1a1a2e;
+      --panel:  #16213e;
+      --gold:   #ffd700;
+      --pink:   #ff6b9d;
+      --cyan:   #00e5ff;
+      --green:  #4cff91;
+      --red:    #ff4444;
+      --white:  #f0f0f0;
+      --grey:   #8888aa;
+      --pixel:  'Press Start 2P', monospace;
+      --vt:     'VT323', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--navy);
+      color: var(--white);
+      font-family: var(--pixel);
+      overflow-x: hidden;
+    }
+    /* Scanlines — same as the app */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(0deg,
+        transparent, transparent 2px,
+        rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px);
+      pointer-events: none; z-index: 9000;
+    }
+    .stars {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        radial-gradient(1px 1px at 8%  12%, rgba(255,215,0,0.7)  0%, transparent 100%),
+        radial-gradient(1px 1px at 22% 38%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 48%  8%, rgba(0,229,255,0.6)  0%, transparent 100%),
+        radial-gradient(1px 1px at 68% 55%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 83% 22%, rgba(255,215,0,0.5)  0%, transparent 100%),
+        radial-gradient(1px 1px at 13% 72%, rgba(0,229,255,0.4)  0%, transparent 100%),
+        radial-gradient(1px 1px at 38% 82%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 58% 32%, rgba(255,107,157,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 91% 77%, rgba(255,215,0,0.4)  0%, transparent 100%),
+        radial-gradient(1px 1px at 75% 18%, rgba(0,229,255,0.3)  0%, transparent 100%);
+    }
+    section, nav, footer { position: relative; z-index: 1; }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 40px;
+      background: rgba(10,12,35,0.95);
+      border-bottom: 3px solid var(--gold);
+      backdrop-filter: blur(10px);
+    }
+    .nav-logo { font-size: 0.62rem; color: var(--gold); text-shadow: 2px 2px #000; letter-spacing: 1px; }
+    .nav-logo span { color: var(--pink); }
+    .nav-cta {
+      background: var(--gold); color: #000; border: 3px solid #000;
+      font-family: var(--pixel); font-size: 0.5rem; padding: 10px 18px;
+      cursor: pointer; box-shadow: 3px 3px 0 #000; transition: all 0.1s; text-decoration: none;
+    }
+    .nav-cta:hover { transform: translate(-2px,-2px); box-shadow: 5px 5px 0 #000; }
+
+    /* PIXEL DIVIDER */
+    .pixel-divider {
+      height: 8px; position: relative; z-index: 1;
+      background: repeating-linear-gradient(90deg,
+        var(--gold) 0px, var(--gold) 8px, transparent 8px, transparent 16px);
+      opacity: 0.35;
+    }
+
+    /* SHARED BUTTONS */
+    .btn-primary {
+      background: var(--gold); color: #000; border: 4px solid #000;
+      font-family: var(--pixel); font-size: 0.68rem; padding: 17px 30px;
+      cursor: pointer; box-shadow: 5px 5px 0 #000; transition: all 0.1s;
+      text-decoration: none; display: inline-block;
+    }
+    .btn-primary:hover { transform: translate(-3px,-3px); box-shadow: 8px 8px 0 #000; background: #ffe033; }
+    .btn-primary:active { transform: translate(2px,2px); box-shadow: 2px 2px 0 #000; }
+    .btn-secondary {
+      background: transparent; color: var(--white); border: 4px solid var(--white);
+      font-family: var(--pixel); font-size: 0.68rem; padding: 17px 30px;
+      cursor: pointer; box-shadow: 5px 5px 0 rgba(255,255,255,0.15);
+      transition: all 0.1s; text-decoration: none; display: inline-block;
+    }
+    .btn-secondary:hover { transform: translate(-3px,-3px); border-color: var(--gold); color: var(--gold); }
+
+    .section-title {
+      font-size: 0.95rem; color: var(--gold); text-shadow: 3px 3px #000;
+      margin-bottom: 55px; letter-spacing: 1px; text-align: center;
+    }
+
+    /* MASCOT ANIMATIONS */
+    @keyframes mascot-float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-14px); }
+    }
+    @keyframes mascot-float-flip {
+      0%, 100% { transform: scaleX(-1) translateY(0); }
+      50%       { transform: scaleX(-1) translateY(-14px); }
+    }
+
+    /* ── HERO ── */
+    #hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 130px 20px 100px;
+      background: radial-gradient(ellipse at 50% 40%, rgba(42,59,144,0.35) 0%, transparent 70%);
+      overflow: hidden;
+    }
+    .hero-mascot {
+      position: absolute; bottom: 0; width: 220px;
+      image-rendering: pixelated; opacity: 0.9;
+      filter: drop-shadow(4px 4px 0 rgba(0,0,0,0.8));
+    }
+    .hero-mascot-left  { left: 40px;  animation: mascot-float 4s ease-in-out infinite 0s; }
+    .hero-mascot-right { right: 40px; animation: mascot-float-flip 4s ease-in-out infinite 1.5s; transform: scaleX(-1); }
+
+    @keyframes blink-cursor { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
+    .hero-eyebrow { font-size: 0.48rem; color: var(--cyan); letter-spacing: 3px; margin-bottom: 20px; animation: blink-cursor 1.2s infinite; }
+
+    .hero-banner {
+      max-width: 500px; width: 90%; image-rendering: pixelated; margin-bottom: 28px;
+      filter: drop-shadow(0 0 24px rgba(255,215,0,0.35));
+      animation: float 3.5s ease-in-out infinite;
+    }
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+    .hero-tagline {
+      font-family: var(--vt); font-size: 2.4rem; color: var(--white);
+      line-height: 1.3; margin-bottom: 14px; max-width: 640px; text-shadow: 3px 3px #000;
+    }
+    .hero-tagline .gold { color: var(--gold); }
+    .hero-tagline .pink { color: var(--pink); }
+    .hero-sub { font-family: var(--vt); font-size: 1.45rem; color: var(--grey); margin-bottom: 40px; max-width: 500px; line-height: 1.5; }
+    .hero-buttons { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+
+    @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+    .scroll-hint { margin-top: 55px; font-size: 0.43rem; color: var(--grey); animation: bounce 1.6s infinite; }
+
+    /* ── HOW IT WORKS ── */
+    #how {
+      padding: 100px 20px;
+      background: linear-gradient(180deg, var(--navy) 0%, var(--deep) 100%);
+      overflow: hidden;
+    }
+    .section-mascot {
+      position: absolute; image-rendering: pixelated; opacity: 0.7;
+      filter: drop-shadow(3px 3px 0 rgba(0,0,0,0.7)); pointer-events: none;
+    }
+    .steps { display: flex; gap: 0; justify-content: center; flex-wrap: wrap; max-width: 920px; margin: 0 auto; }
+    .step { flex: 1; min-width: 170px; max-width: 240px; padding: 28px 18px; text-align: center; position: relative; }
+    .step:not(:last-child)::after { content: '▶'; position: absolute; right: -12px; top: 44px; color: var(--gold); font-size: 0.9rem; }
+    .step-num {
+      width: 48px; height: 48px; background: var(--gold); color: #000; font-size: 0.75rem;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 18px; border: 4px solid #000; box-shadow: 4px 4px 0 #000;
+    }
+    .step-icon { font-size: 2.4rem; margin-bottom: 14px; display: block; }
+    .step h3 { font-size: 0.52rem; color: var(--white); margin-bottom: 10px; line-height: 1.7; }
+    .step p { font-family: var(--vt); font-size: 1.1rem; color: var(--grey); line-height: 1.5; }
+
+    /* ── FEATURES ── */
+    #features {
+      padding: 100px 20px; background: var(--panel);
+      border-top: 4px solid var(--gold); border-bottom: 4px solid var(--gold); overflow: hidden;
+    }
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap: 22px; max-width: 1000px; margin: 0 auto; }
+    .feature-card { background: var(--deep); border: 3px solid var(--gold); box-shadow: 5px 5px 0 #000; padding: 28px 22px; transition: transform 0.15s; }
+    .feature-card:hover { transform: translate(-3px,-3px); box-shadow: 8px 8px 0 #000; }
+    .feature-card .icon { font-size: 2rem; margin-bottom: 14px; display: block; }
+    .feature-card h3 { font-size: 0.52rem; color: var(--gold); margin-bottom: 10px; line-height: 1.7; }
+    .feature-card p { font-family: var(--vt); font-size: 1.12rem; color: var(--grey); line-height: 1.5; }
+
+    /* ── THEMES ── */
+    #themes { padding: 100px 20px; text-align: center; background: var(--navy); overflow: hidden; }
+    .themes-mascot-left {
+      position: absolute; left: 20px; bottom: 50px; width: 170px;
+      image-rendering: pixelated; opacity: 0.8;
+      filter: drop-shadow(3px 3px 0 rgba(0,0,0,0.8));
+      animation: mascot-float 4s ease-in-out infinite 0.5s;
+    }
+    .themes-mascot-right {
+      position: absolute; right: 20px; bottom: 50px; width: 170px;
+      image-rendering: pixelated; opacity: 0.8;
+      filter: drop-shadow(3px 3px 0 rgba(0,0,0,0.8));
+      animation: mascot-float-flip 4s ease-in-out infinite 2s;
+      transform: scaleX(-1);
+    }
+    .themes-grid { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; max-width: 960px; margin: 0 auto 50px; }
+    .theme-card {
+      flex: 1; min-width: 190px; max-width: 220px; border: 3px solid;
+      padding: 30px 16px 20px; text-align: center; position: relative;
+      transition: transform 0.15s; background: var(--deep);
+    }
+    .theme-card:hover { transform: translateY(-5px); }
+    .theme-card.free   { border-color: var(--green); }
+    .theme-card.locked { border-color: var(--gold);  }
+    .theme-badge {
+      position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+      font-size: 0.4rem; padding: 4px 10px; border: 2px solid; white-space: nowrap;
+    }
+    .theme-card.free   .theme-badge { background: var(--green); color: #000; border-color: #000; }
+    .theme-card.locked .theme-badge { background: var(--gold);  color: #000; border-color: #000; }
+    .theme-img { width: 100%; max-width: 130px; height: auto; image-rendering: pixelated; display: block; margin: 0 auto 14px; filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.6)); }
+    .theme-card h3 { font-size: 0.48rem; color: var(--white); line-height: 1.7; }
+    .theme-lock { font-size: 1.2rem; display: block; margin-top: 8px; }
+
+    /* ── BUY / PRICING ── */
+    #buy { padding: 100px 20px; text-align: center; background: linear-gradient(180deg, var(--panel) 0%, var(--deep) 100%); border-top: 4px solid var(--gold); overflow: hidden; }
+    .pricing-wrapper { position: relative; max-width: 480px; margin: 0 auto; }
+    .pricing-card { background: var(--deep); border: 4px solid var(--gold); box-shadow: 8px 8px 0 #000; padding: 44px 32px; position: relative; }
+    .pricing-ribbon { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); background: var(--pink); color: #000; border: 3px solid #000; font-size: 0.44rem; padding: 5px 16px; white-space: nowrap; }
+    .pricing-mascot {
+      position: absolute; top: -115px; right: -10px; width: 130px;
+      image-rendering: pixelated; filter: drop-shadow(3px 3px 0 rgba(0,0,0,0.8));
+      animation: mascot-float 3.5s ease-in-out infinite 1s;
+    }
+    .pricing-price { font-size: 3rem; color: var(--gold); text-shadow: 4px 4px #000; margin: 22px 0 5px; }
+    .pricing-once { font-family: var(--vt); font-size: 1.3rem; color: var(--grey); margin-bottom: 28px; }
+    .pricing-includes { text-align: left; margin-bottom: 28px; }
+    .pricing-includes li { font-family: var(--vt); font-size: 1.2rem; color: var(--white); padding: 8px 0; border-bottom: 1px solid rgba(255,215,0,0.15); list-style: none; display: flex; align-items: center; gap: 10px; }
+    .pricing-includes li::before { content: '▶'; color: var(--gold); font-size: 0.55rem; }
+
+    #checkout-section { display: none; margin-top: 28px; }
+    #payment-element { background: #0a0c20; border: 2px solid var(--gold); padding: 16px; margin-bottom: 16px; }
+    #email-input {
+      width: 100%; background: #0a0c20; border: 2px solid var(--gold);
+      color: var(--white); font-family: var(--pixel); font-size: 0.53rem;
+      padding: 14px; margin-bottom: 12px; outline: none; transition: border-color 0.2s;
+    }
+    #email-input:focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0,229,255,0.2); }
+    #email-input::placeholder { color: var(--grey); }
+    #submit-payment {
+      width: 100%; background: var(--green); color: #000; border: 4px solid #000;
+      font-family: var(--pixel); font-size: 0.68rem; padding: 18px;
+      cursor: pointer; box-shadow: 5px 5px 0 #000; transition: all 0.1s;
+    }
+    #submit-payment:hover { transform: translate(-2px,-2px); box-shadow: 7px 7px 0 #000; }
+    #submit-payment:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    #payment-message { font-family: var(--vt); font-size: 1.1rem; margin-top: 12px; min-height: 22px; }
+    .msg-error { color: var(--red); }
+    .msg-success { color: var(--green); }
+
+    /* ── FAQ ── */
+    #faq { padding: 100px 20px; background: var(--navy); border-top: 4px solid rgba(255,215,0,0.2); }
+    .faq-list { max-width: 700px; margin: 0 auto; }
+    .faq-item { border: 2px solid rgba(255,215,0,0.25); margin-bottom: 12px; cursor: pointer; transition: border-color 0.2s; }
+    .faq-item:hover { border-color: var(--gold); }
+    .faq-q { font-size: 0.48rem; padding: 18px 20px; color: var(--white); display: flex; justify-content: space-between; align-items: center; gap: 16px; line-height: 1.7; }
+    .faq-arrow { color: var(--gold); font-size: 0.55rem; flex-shrink: 0; transition: transform 0.2s; }
+    .faq-item.open .faq-arrow { transform: rotate(90deg); }
+    .faq-a { display: none; font-family: var(--vt); font-size: 1.13rem; color: var(--grey); padding: 14px 20px 18px; line-height: 1.6; border-top: 1px solid rgba(255,215,0,0.15); }
+    .faq-item.open .faq-a { display: block; }
+
+    /* ── FOOTER ── */
+    footer { background: var(--deep); border-top: 4px solid var(--gold); padding: 40px 20px; text-align: center; }
+    .footer-logo { font-size: 0.63rem; color: var(--gold); margin-bottom: 16px; }
+    footer p { font-family: var(--vt); font-size: 1.1rem; color: var(--grey); margin-bottom: 8px; }
+    footer a { color: var(--gold); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .hero-mascot { width: 110px; }
+      .hero-mascot-left { left: 5px; } .hero-mascot-right { right: 5px; }
+    }
+    @media (max-width: 600px) {
+      nav { padding: 12px 16px; }
+      .nav-logo { font-size: 0.48rem; }
+      .hero-tagline { font-size: 1.8rem; }
+      .section-title { font-size: 0.75rem; }
+      .step:not(:last-child)::after { display: none; }
+      .pricing-price { font-size: 2.2rem; }
+      .hero-mascot, .themes-mascot-left, .themes-mascot-right, .pricing-mascot, .section-mascot { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stars"></div>
+
+  <nav>
+    <div class="nav-logo">⚔️ STEALTH <span>CLASSROOM</span></div>
+    <a href="/app" class="nav-cta">LAUNCH APP</a>
+  </nav>
+
+  <!-- HERO -->
+  <section id="hero">
+    <img src="app/ninja2.png" alt="" class="hero-mascot hero-mascot-left" aria-hidden="true">
+    <img src="app/dino1.png"  alt="" class="hero-mascot hero-mascot-right" aria-hidden="true">
+    <p class="hero-eyebrow">// LEVEL UP YOUR CLASSROOM //</p>
+    <img src="app/banner.png" alt="Stealth Classroom" class="hero-banner">
+    <h1 class="hero-tagline">Turn <span class="gold">silence</span> into<br>a <span class="pink">superpower</span></h1>
+    <p class="hero-sub">The noise monitor that students actually want to beat. Earn XP. Rank up. Stay quiet.</p>
+    <div class="hero-buttons">
+      <a href="/app" class="btn-primary">▶ LAUNCH FREE APP</a>
+      <a href="#buy" class="btn-secondary">🔓 UNLOCK THEMES</a>
+    </div>
+    <p class="scroll-hint">▼ SCROLL TO LEARN MORE ▼</p>
+  </section>
+
+  <div class="pixel-divider"></div>
+
+  <!-- HOW IT WORKS -->
+  <section id="how">
+    <img src="app/bear2.png" alt="" class="section-mascot"
+      style="right:30px; bottom:40px; width:150px; animation: mascot-float 4s ease-in-out infinite 1s;" aria-hidden="true">
+    <h2 class="section-title">// HOW IT WORKS //</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <span class="step-icon">📱</span>
+        <h3>OPEN THE APP</h3>
+        <p>Works on any device — iPad, phone, or desktop. No install needed. Just tap and go.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <span class="step-icon">🎙️</span>
+        <h3>IT LISTENS</h3>
+        <p>The app uses your microphone to monitor noise in real-time. Auto-calibrates in 5 seconds.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <span class="step-icon">🏆</span>
+        <h3>CLASS EARNS XP</h3>
+        <p>Stay quiet → earn XP. Get loud → lose a heart. The class ranks up over the year.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <span class="step-icon">🛒</span>
+        <h3>SPEND XP</h3>
+        <p>Spend earned XP in the store on real rewards like free time and homework passes.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="pixel-divider"></div>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <img src="app/santa1.png" alt="" class="section-mascot"
+      style="left:30px; bottom:40px; width:150px; animation: mascot-float 4s ease-in-out infinite 0s;" aria-hidden="true">
+    <h2 class="section-title">// FEATURES //</h2>
+    <div class="features-grid">
+      <div class="feature-card"><span class="icon">🎮</span><h3>FULLY GAMIFIED</h3><p>XP, ranks, streaks, hearts, checkpoints and bonus zones keep students genuinely engaged.</p></div>
+      <div class="feature-card"><span class="icon">📶</span><h3>WORKS OFFLINE</h3><p>Install as a PWA and run completely offline. Perfect for classrooms with patchy WiFi.</p></div>
+      <div class="feature-card"><span class="icon">🏫</span><h3>MULTI-CLASS</h3><p>Track multiple classes separately. Each class builds their own XP and rank over the year.</p></div>
+      <div class="feature-card"><span class="icon">🔇</span><h3>AUTO CALIBRATION</h3><p>Automatically adjusts to your room's background noise. Works in any environment.</p></div>
+      <div class="feature-card"><span class="icon">🛒</span><h3>XP REWARD STORE</h3><p>Customise rewards for your class. Add, edit, and price items however you like.</p></div>
+      <div class="feature-card"><span class="icon">📊</span><h3>CLASS RANKINGS</h3><p>Hall of Fame leaderboard lets classes compete against each other all year.</p></div>
+    </div>
+  </section>
+
+  <div class="pixel-divider"></div>
+
+  <!-- THEMES -->
+  <section id="themes">
+    <img src="app/ninja2.png"  alt="" class="themes-mascot-left"  aria-hidden="true">
+    <img src="app/santa1.png"  alt="" class="themes-mascot-right" aria-hidden="true">
+    <h2 class="section-title">// THEME PACKS //</h2>
+    <div class="themes-grid">
+      <div class="theme-card free">
+        <span class="theme-badge">FREE</span>
+        <img src="app/banner.png" alt="Ninja Dojo" class="theme-img">
+        <h3>NINJA DOJO</h3>
+      </div>
+      <div class="theme-card locked">
+        <span class="theme-badge">BUNDLE</span>
+        <img src="app/dinobanner.png" alt="Jurassic Jungle" class="theme-img">
+        <h3>JURASSIC JUNGLE</h3>
+        <span class="theme-lock">🔒</span>
+      </div>
+      <div class="theme-card locked">
+        <span class="theme-badge">BUNDLE</span>
+        <img src="app/candybanner.png" alt="Candy Land" class="theme-img">
+        <h3>CANDY LAND</h3>
+        <span class="theme-lock">🔒</span>
+      </div>
+      <div class="theme-card locked">
+        <span class="theme-badge">BUNDLE</span>
+        <img src="app/santabanner.png" alt="Stealth Santa" class="theme-img">
+        <h3>STEALTH SANTA</h3>
+        <span class="theme-lock">🔒</span>
+      </div>
+    </div>
+    <a href="#buy" class="btn-primary">🔓 UNLOCK ALL 3 FOR $5</a>
+  </section>
+
+  <div class="pixel-divider"></div>
+
+  <!-- BUY -->
+  <section id="buy">
+    <h2 class="section-title">// UNLOCK THEME BUNDLE //</h2>
+    <div class="pricing-wrapper">
+      <img src="app/bear2.png" alt="" class="pricing-mascot" aria-hidden="true">
+      <div class="pricing-card">
+        <div class="pricing-ribbon">⭐ ONE-TIME PAYMENT ⭐</div>
+        <div class="pricing-price">$5</div>
+        <p class="pricing-once">Pay once. Own forever.</p>
+        <ul class="pricing-includes">
+          <li>Jurassic Jungle theme pack</li>
+          <li>Candy Land theme pack</li>
+          <li>Stealth Santa theme pack</li>
+          <li>All future themes included free</li>
+          <li>Supports the developer ❤️</li>
+        </ul>
+        <div id="buy-step-1">
+          <input type="email" id="email-input" placeholder="YOUR EMAIL ADDRESS" autocomplete="email">
+          <button class="btn-primary" style="width:100%; font-size:0.63rem;" onclick="startCheckout()">
+            ▶ PROCEED TO CHECKOUT
+          </button>
+        </div>
+        <div id="checkout-section">
+          <div id="payment-element"></div>
+          <button id="submit-payment" onclick="submitPayment()">🔒 PAY $5 — UNLOCK THEMES</button>
+          <div id="payment-message"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="pixel-divider"></div>
+
+  <!-- FAQ -->
+  <section id="faq">
+    <h2 class="section-title">// FAQ //</h2>
+    <div class="faq-list">
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">IS THE MAIN APP REALLY FREE? <span class="faq-arrow">▶</span></div>
+        <div class="faq-a">Yes — the Ninja Dojo theme and all core features are completely free forever. The $5 bundle is purely for extra theme packs.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">HOW DO I UNLOCK AFTER PAYING? <span class="faq-arrow">▶</span></div>
+        <div class="faq-a">After payment you'll see your unique code on screen and receive it by email. Enter it in the app under the theme selector to unlock all packs permanently on that device.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">WHAT DEVICES DOES IT WORK ON? <span class="faq-arrow">▶</span></div>
+        <div class="faq-a">Any modern device with a microphone — iPad, iPhone, Android, laptop, or desktop. Works best propped up in landscape on an iPad or tablet.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">DOES IT WORK WITHOUT INTERNET? <span class="faq-arrow">▶</span></div>
+        <div class="faq-a">Yes! Install it as a PWA (Add to Home Screen) and it runs fully offline. Perfect for classrooms with unreliable WiFi.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">IS MY MICROPHONE DATA STORED? <span class="faq-arrow">▶</span></div>
+        <div class="faq-a">No. The app only measures volume levels in real-time — it never records or stores audio. Everything stays on your device.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">CAN I USE MY CODE ON MULTIPLE DEVICES? <span class="faq-arrow">▶</span></div>
+        <div class="faq-a">Each code unlocks one device. If you need multiple devices contact support and we'll sort you out.</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-logo">⚔️ STEALTH CLASSROOM</div>
+    <p>Made with ❤️ for teachers everywhere.</p>
+    <p><a href="/app">Launch App</a> · <a href="/cdn-cgi/l/email-protection#9eedebeeeef1eceadeedeafbfff2eaf6fdf2ffededecf1f1f3b0fdf1f3">Support</a></p>
+    <p style="margin-top:16px; font-size:0.9rem;">© 2025 Stealth Classroom. All rights reserved.</p>
+  </footer>
+
+  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+    // ── Replace with your actual Stripe publishable key ──
+    const STRIPE_PUBLISHABLE_KEY = 'pk_live_YOUR_KEY_HERE';
+    const WORKER_URL = 'https://stealth-classroom-api.dibbleandseed.workers.dev';
+
+    let stripe, elements;
+
+    async function startCheckout() {
+      const email = document.getElementById('email-input').value.trim();
+      if (!email || !email.includes('@')) {
+        const inp = document.getElementById('email-input');
+        inp.style.borderColor = '#ff4444'; inp.focus();
+        setTimeout(() => { inp.style.borderColor = ''; }, 1600);
+        return;
+      }
+      const btn = document.querySelector('#buy-step-1 button');
+      btn.textContent = 'LOADING...'; btn.disabled = true;
+      try {
+        const res  = await fetch(`${WORKER_URL}/create-checkout`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        if (data.error) {
+          setMsg(data.error, 'error');
+          btn.textContent = '▶ PROCEED TO CHECKOUT'; btn.disabled = false; return;
+        }
+        stripe   = Stripe(STRIPE_PUBLISHABLE_KEY);
+        elements = stripe.elements({ clientSecret: data.clientSecret, appearance: stripeTheme() });
+        elements.create('payment').mount('#payment-element');
+        document.getElementById('buy-step-1').style.display = 'none';
+        document.getElementById('checkout-section').style.display = 'block';
+      } catch (err) {
+        setMsg('Connection error. Please try again.', 'error');
+        btn.textContent = '▶ PROCEED TO CHECKOUT'; btn.disabled = false;
+      }
+    }
+
+    async function submitPayment() {
+      const btn = document.getElementById('submit-payment');
+      btn.disabled = true; btn.textContent = 'PROCESSING...'; setMsg('', '');
+      const { error } = await stripe.confirmPayment({
+        elements,
+        confirmParams: { return_url: `${window.location.origin}/success` },
+      });
+      if (error) {
+        setMsg(error.message, 'error');
+        btn.disabled = false; btn.textContent = '🔒 PAY $5 — UNLOCK THEMES';
+      }
+    }
+
+    function setMsg(msg, type) {
+      const el = document.getElementById('payment-message');
+      el.textContent = msg;
+      el.className = type === 'error' ? 'msg-error' : type === 'success' ? 'msg-success' : '';
+    }
+
+    function stripeTheme() {
+      return {
+        theme: 'night',
+        variables: { colorPrimary: '#ffd700', colorBackground: '#0a0c20', colorText: '#f0f0f0', colorDanger: '#ff4444', fontFamily: '"Press Start 2P", monospace', spacingUnit: '4px', borderRadius: '0px' },
+        rules: {
+          '.Input': { border: '2px solid #ffd700', padding: '12px' },
+          '.Input:focus': { border: '2px solid #00e5ff', boxShadow: '0 0 8px rgba(0,229,255,0.3)' },
+          '.Label':

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Successful — Stealth Classroom</title>
+  <meta name="theme-color" content="#1a1a2e">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy:  #0d0f2b;
+      --deep:  #1a1a2e;
+      --gold:  #ffd700;
+      --green: #4cff91;
+      --white: #f0f0f0;
+      --grey:  #8888aa;
+      --red:   #ff4444;
+      --pixel: 'Press Start 2P', monospace;
+      --vt:    'VT323', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--navy);
+      color: var(--white);
+      font-family: var(--pixel);
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
+      pointer-events: none; z-index: 9999;
+    }
+
+    .card {
+      background: var(--deep);
+      border: 4px solid var(--gold);
+      box-shadow: 8px 8px 0 #000;
+      padding: 50px 40px;
+      max-width: 540px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .success-icon {
+      font-size: 4rem;
+      display: block;
+      margin-bottom: 20px;
+      animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes pop {
+      0% { transform: scale(0); }
+      100% { transform: scale(1); }
+    }
+
+    h1 {
+      font-size: 0.85rem;
+      color: var(--green);
+      text-shadow: 3px 3px #000;
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+
+    .sub {
+      font-family: var(--vt);
+      font-size: 1.3rem;
+      color: var(--grey);
+      margin-bottom: 40px;
+      line-height: 1.5;
+    }
+
+    .code-label {
+      font-size: 0.5rem;
+      color: var(--gold);
+      margin-bottom: 12px;
+      letter-spacing: 1px;
+    }
+
+    .code-box {
+      background: #000;
+      border: 4px solid var(--green);
+      padding: 20px;
+      margin-bottom: 16px;
+      position: relative;
+    }
+
+    #unlock-code {
+      font-size: 1.4rem;
+      color: var(--green);
+      text-shadow: 0 0 20px rgba(76,255,145,0.5);
+      letter-spacing: 4px;
+      display: block;
+      min-height: 2rem;
+    }
+
+    .copy-btn {
+      background: var(--gold);
+      color: #000;
+      border: 3px solid #000;
+      font-family: var(--pixel);
+      font-size: 0.5rem;
+      padding: 12px 24px;
+      cursor: pointer;
+      box-shadow: 4px 4px 0 #000;
+      transition: all 0.1s;
+      margin-bottom: 30px;
+      display: inline-block;
+    }
+    .copy-btn:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 #000; }
+    .copy-btn:active { transform: translate(1px,1px); box-shadow: 2px 2px 0 #000; }
+
+    .instructions {
+      background: rgba(255,215,0,0.05);
+      border: 2px solid rgba(255,215,0,0.2);
+      padding: 20px;
+      margin-bottom: 30px;
+      text-align: left;
+    }
+
+    .instructions h3 {
+      font-size: 0.5rem;
+      color: var(--gold);
+      margin-bottom: 12px;
+    }
+
+    .instructions ol {
+      list-style: none;
+      counter-reset: steps;
+    }
+
+    .instructions li {
+      font-family: var(--vt);
+      font-size: 1.15rem;
+      color: var(--grey);
+      padding: 6px 0;
+      counter-increment: steps;
+      display: flex; gap: 10px;
+      line-height: 1.5;
+    }
+
+    .instructions li::before {
+      content: counter(steps) ".";
+      color: var(--gold);
+      font-family: var(--pixel);
+      font-size: 0.5rem;
+      flex-shrink: 0;
+      padding-top: 2px;
+    }
+
+    .email-note {
+      font-family: var(--vt);
+      font-size: 1.05rem;
+      color: var(--grey);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .email-note strong { color: var(--gold); }
+
+    .launch-btn {
+      background: var(--green);
+      color: #000;
+      border: 4px solid #000;
+      font-family: var(--pixel);
+      font-size: 0.7rem;
+      padding: 18px 32px;
+      cursor: pointer;
+      box-shadow: 5px 5px 0 #000;
+      transition: all 0.1s;
+      text-decoration: none;
+      display: inline-block;
+      width: 100%;
+    }
+    .launch-btn:hover { transform: translate(-2px,-2px); box-shadow: 7px 7px 0 #000; }
+
+    .loading-text {
+      font-family: var(--vt);
+      font-size: 1.3rem;
+      color: var(--grey);
+      animation: pulse 1s infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .error-text {
+      color: var(--red);
+      font-family: var(--vt);
+      font-size: 1.1rem;
+    }
+
+    @media (max-width: 480px) {
+      .card { padding: 30px 20px; }
+      #unlock-code { font-size: 1rem; letter-spacing: 2px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <span class="success-icon">🎉</span>
+    <h1>MISSION COMPLETE!</h1>
+    <p class="sub">Your theme bundle is unlocked. Here's your unique code:</p>
+
+    <p class="code-label">// YOUR UNLOCK CODE //</p>
+    <div class="code-box">
+      <span id="unlock-code"><span class="loading-text">RETRIEVING CODE...</span></span>
+    </div>
+    <button class="copy-btn" onclick="copyCode()" id="copy-btn">📋 COPY CODE</button>
+
+    <p class="email-note">
+      <strong>This code has also been emailed to you.</strong><br>
+      Save it — you'll need it if you install on a new device.
+    </p>
+
+    <div class="instructions">
+      <h3>HOW TO ACTIVATE:</h3>
+      <ol>
+        <li>Open Stealth Classroom on your device</li>
+        <li>Tap the theme selector dropdown</li>
+        <li>Select any locked theme (Jungle, Candy or Santa)</li>
+        <li>Enter your code when prompted</li>
+        <li>All themes unlock permanently on this device!</li>
+      </ol>
+    </div>
+
+    <a href="/app" class="launch-btn">▶ LAUNCH APP NOW</a>
+  </div>
+
+  <script>
+    const WORKER_URL = 'https://stealth-classroom-api.dibbleandseed.workers.dev';
+    let currentCode = '';
+
+    async function fetchCode() {
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get('session_id');
+
+      if (!sessionId) {
+        document.getElementById('unlock-code').innerHTML = '<span class="error-text">Missing session. Check your email for your code.</span>';
+        return;
+      }
+
+      // Retry up to 6 times (webhook may take a moment)
+      for (let i = 0; i < 6; i++) {
+        try {
+          const res = await fetch(`${WORKER_URL}/get-code?session_id=${sessionId}`);
+          const data = await res.json();
+
+          if (data.code) {
+            currentCode = data.code;
+            document.getElementById('unlock-code').textContent = data.code;
+            document.getElementById('copy-btn').style.display = 'inline-block';
+            return;
+          }
+        } catch (e) {}
+
+        if (i < 5) await sleep(2000); // wait 2s between retries
+      }
+
+      document.getElementById('unlock-code').innerHTML = '<span class="error-text">Check your email — code was sent there.</span>';
+    }
+
+    function copyCode() {
+      if (!currentCode) return;
+      navigator.clipboard.writeText(currentCode).then(() => {
+        const btn = document.getElementById('copy-btn');
+        btn.textContent = '✅ COPIED!';
+        setTimeout(() => { btn.textContent = '📋 COPY CODE'; }, 2000);
+      });
+    }
+
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    fetchCode();
+  </script>
+</body>
+</html>
