@@ -555,6 +555,19 @@
                 <p>Calibrating perfect silence.<br>Mission starts automatically.</p>
             </div>
 
+            <!-- DEBUG PANEL — remove after tuning -->
+            <div id="debug-panel" style="
+                display:none; position:absolute; top:120px; left:50%; transform:translateX(-50%);
+                background:rgba(0,0,0,0.85); border:2px solid var(--gold);
+                padding:10px 16px; font-size:0.45rem; z-index:999; text-align:left;
+                line-height:2; white-space:nowrap;
+            ">
+                <div>BASELINE: <span id="dbg-baseline" style="color:var(--cyan)">--</span></div>
+                <div>THRESHOLD: <span id="dbg-threshold" style="color:var(--gold)">--</span></div>
+                <div>LIVE VOL: <span id="dbg-volume" style="color:var(--green)">--</span></div>
+                <div>DEVICE: <span id="dbg-device" style="color:var(--pink)">--</span></div>
+            </div>
+
             <div id="xp-lost-sign">XP LOST!</div>
             <div id="bonus-sign"> BONUS XP ZONE </div>
             <div id="progress-wrapper">
@@ -1152,6 +1165,12 @@
                     currentThreshold = Math.max(10, Math.min(baseline + headroom, 90));
                     console.log(`Device: ${isTablet ? 'tablet' : isPhone ? 'phone' : 'desktop'} | baseline=${baseline}, headroom=${headroom}, threshold=${currentThreshold}`);
 
+                    // Show debug panel
+                    document.getElementById('dbg-baseline').textContent = baseline;
+                    document.getElementById('dbg-threshold').textContent = currentThreshold;
+                    document.getElementById('dbg-device').textContent = isTablet ? 'TABLET' : isPhone ? 'PHONE' : 'DESKTOP';
+                    document.getElementById('debug-panel').style.display = 'block';
+
                     isCalibrating = false;
                     document.getElementById('calibration-overlay-game').style.display = 'none';
                     lastTimestamp = performance.now();
@@ -1183,6 +1202,10 @@
                     // Peak in speech frequency range — same as calibration, beats AGC
                     const speechBins = Array.from(dataArray.slice(2, 40));
                     let volume = Math.max(...speechBins);
+
+                    // Update debug panel live volume
+                    const dbgVol = document.getElementById('dbg-volume');
+                    if (dbgVol) dbgVol.textContent = volume;
                     const bar = document.getElementById('progress-bar');
                     if (volume > currentThreshold) {
                         redTimer++;
