@@ -1120,34 +1120,41 @@
                 await audioContext.resume();
             }
 
-            // 5 SECOND CALIBRATION LOOP
+            // 5 SECOND CALIBRATION LOOP — peak based to beat AGC
             let samples = [], count = 0;
             const interval = setInterval(() => {
                 const dataArray = new Uint8Array(analyser.frequencyBinCount);
                 analyser.getByteFrequencyData(dataArray);
-                let volume = dataArray.reduce((a, b) => a + b) / dataArray.length;
-                samples.push(volume); count++;
+
+                // Use peak value in speech frequency range (roughly bins 2-40 at fftSize 1024)
+                // This is where voices live — ignores low rumble and high hiss
+                const speechBins = Array.from(dataArray.slice(2, 40));
+                const peak = Math.max(...speechBins);
+                samples.push(peak); count++;
 
                 if (count >= 50) { // 50 ticks * 100ms = 5 seconds
                     clearInterval(interval);
-                    let avg = samples.reduce((a, b) => a + b) / samples.length;
 
-                    // Auto-detect device type and set sensitivity multiplier
+                    // Use 90th percentile of silence peaks as baseline (ignores outlier sounds)
+                    const sorted = [...samples].sort((a, b) => a - b);
+                    const baseline = sorted[Math.floor(sorted.length * 0.9)];
+
+                    // Auto-detect device
                     const ua = navigator.userAgent;
                     const isTablet = /iPad/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
                     const isPhone  = /iPhone|Android/i.test(ua) && !isTablet;
-                    let multiplier = 1.8;        // desktop/laptop default
-                    if (isTablet) multiplier = 1.15; // iPad — AGC heavily compresses, need very tight threshold
-                    if (isPhone)  multiplier = 2.2;  // phone — less AGC but smaller mic
 
-                    const computed = Math.round(avg * multiplier);
-                    currentThreshold = Math.max(12, Math.min(computed, 90));
-                    console.log(`Device: ${isTablet ? 'tablet' : isPhone ? 'phone' : 'desktop'} | avg=${avg.toFixed(1)}, multiplier=${multiplier}, threshold=${currentThreshold}`);
-                    
-                    // Hide overlay and allow game loop to start tracking time
+                    // Add a fixed headroom above baseline — larger on iPad to compensate for AGC
+                    let headroom = 18;
+                    if (isTablet) headroom = 10; // tighter on iPad — AGC makes everything quiet
+                    if (isPhone)  headroom = 20;
+
+                    currentThreshold = Math.max(10, Math.min(baseline + headroom, 90));
+                    console.log(`Device: ${isTablet ? 'tablet' : isPhone ? 'phone' : 'desktop'} | baseline=${baseline}, headroom=${headroom}, threshold=${currentThreshold}`);
+
                     isCalibrating = false;
                     document.getElementById('calibration-overlay-game').style.display = 'none';
-                    lastTimestamp = performance.now(); // Reset time to prevent sudden jump
+                    lastTimestamp = performance.now();
                 }
             }, 100);
 
@@ -1173,7 +1180,9 @@
                 if (analyser) {
                     const dataArray = new Uint8Array(analyser.frequencyBinCount);
                     analyser.getByteFrequencyData(dataArray);
-                    let volume = dataArray.reduce((a, b) => a + b) / dataArray.length;
+                    // Peak in speech frequency range — same as calibration, beats AGC
+                    const speechBins = Array.from(dataArray.slice(2, 40));
+                    let volume = Math.max(...speechBins);
                     const bar = document.getElementById('progress-bar');
                     if (volume > currentThreshold) {
                         redTimer++;
