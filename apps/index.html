@@ -552,7 +552,7 @@
             
             <div id="calibration-overlay-game">
                 <h2>SHHH... CALIBRATING</h2>
-                <p>Calibrating perfect silence.<br>Mission starts automatically.</p>
+                <p>Calibrating perfect silence.<br>8 seconds — mission starts automatically.</p>
             </div>
 
             <!-- DEBUG PANEL — remove after tuning -->
@@ -1145,7 +1145,7 @@
                 const peak = Math.max(...speechBins);
                 samples.push(peak); count++;
 
-                if (count >= 50) { // 50 ticks * 100ms = 5 seconds
+                if (count >= 80) { // 80 ticks * 100ms = 8 seconds
                     clearInterval(interval);
 
                     // Use 90th percentile of silence peaks as baseline (ignores outlier sounds)
@@ -1157,18 +1157,19 @@
                     const isTablet = /iPad/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
                     const isPhone  = /iPhone|Android/i.test(ua) && !isTablet;
 
-                    // Add a fixed headroom above baseline — larger on iPad to compensate for AGC
-                    let headroom = 18;
-                    if (isTablet) headroom = 10; // tighter on iPad — AGC makes everything quiet
-                    if (isPhone)  headroom = 20;
+                    // Percentage-based threshold — scales with any room's noise level
+                    // Threshold is always X% louder than the calibrated baseline
+                    let multiplier = 1.3;          // desktop
+                    if (isTablet) multiplier = 1.3; // iPad
+                    if (isPhone)  multiplier = 1.3; // phone
 
-                    currentThreshold = Math.max(10, Math.min(baseline + headroom, 90));
-                    console.log(`Device: ${isTablet ? 'tablet' : isPhone ? 'phone' : 'desktop'} | baseline=${baseline}, headroom=${headroom}, threshold=${currentThreshold}`);
+                    currentThreshold = Math.round(baseline * multiplier);
+                    console.log(`Device: ${isTablet ? 'tablet' : isPhone ? 'phone' : 'desktop'} | baseline=${baseline}, multiplier=${multiplier}, threshold=${currentThreshold}`);
 
                     // Show debug panel
                     document.getElementById('dbg-baseline').textContent = baseline;
                     document.getElementById('dbg-threshold').textContent = currentThreshold;
-                    document.getElementById('dbg-device').textContent = isTablet ? 'TABLET' : isPhone ? 'PHONE' : 'DESKTOP';
+                    document.getElementById('dbg-device').textContent = `${isTablet ? 'TABLET' : isPhone ? 'PHONE' : 'DESKTOP'} ×${multiplier}`;
                     document.getElementById('debug-panel').style.display = 'block';
 
                     isCalibrating = false;
