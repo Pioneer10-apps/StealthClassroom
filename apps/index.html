@@ -419,6 +419,38 @@
         <button id="shareBtn" class="top-btn" onclick="shareWithTeachers()">SHARE 🔥</button>
     </div>
 
+    <!-- PAYWALL OVERLAY -->
+    <div id="paywall-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:5000; flex-direction:column; justify-content:center; align-items:center;">
+        <div class="ui-card" style="max-width:500px; text-align:center; position:relative;">
+            <h2 class="gold-heading" style="font-size:1.2rem;">🔒 THEME BUNDLE</h2>
+
+            <!-- Rotating theme preview banner -->
+            <div style="margin-bottom:20px; position:relative; height:80px; display:flex; align-items:center; justify-content:center;">
+                <img id="paywall-preview" src="banner.png" style="max-height:80px; max-width:300px; image-rendering:pixelated; transition:opacity 0.3s;">
+            </div>
+            <p style="font-size:0.45rem; color:var(--gold); margin-bottom:15px; letter-spacing:1px;">PREVIEWING ALL THEMES...</p>
+
+            <div style="display:flex; justify-content:center; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+                <span style="background:var(--ninja-dark-bg); border:2px solid var(--gold); padding:8px 12px; font-size:0.45rem;">🦕 JURASSIC JUNGLE</span>
+                <span style="background:var(--ninja-dark-bg); border:2px solid var(--gold); padding:8px 12px; font-size:0.45rem;">🍬 CANDY LAND</span>
+                <span style="background:var(--ninja-dark-bg); border:2px solid var(--gold); padding:8px 12px; font-size:0.45rem;">🎅 STEALTH SANTA</span>
+            </div>
+
+            <div style="font-size:2.5rem; color:var(--gold); text-shadow:3px 3px #000; margin:10px 0 5px;">$5</div>
+            <p style="font-family:'VT323',monospace; font-size:1.2rem; color:#aaa; margin-bottom:20px;">Pay once. Own forever. All future themes free.</p>
+
+            <input type="text" id="unlock-code-input" class="input-box" placeholder="HAVE A CODE? ENTER IT HERE" style="width:100%; margin-bottom:10px; font-size:0.5rem;">
+            <button onclick="submitUnlockCode()" style="width:100%; margin-bottom:10px; background:var(--green); border-color:#000; color:#000; font-size:0.6rem;">✅ UNLOCK WITH CODE</button>
+            <a href="https://stealthclassroom.com" target="_blank" style="display:block; width:100%; box-sizing:border-box;">
+                <button style="width:100%; background:var(--gold); border-color:#000; color:#000; font-size:0.6rem; margin-bottom:10px;">🛒 BUY FOR $5 — GET YOUR CODE</button>
+            </a>
+            <button onclick="closePaywall()" style="font-size:0.5rem; padding:10px 20px; background:transparent; border-color:#555; color:#aaa;">CLOSE</button>
+
+            <div id="unlock-banner" style="display:none; background:var(--green); color:#000; padding:10px; font-size:0.5rem; margin-top:15px;">🎉 THEMES UNLOCKED! ENJOY ALL PACKS!</div>
+            <div id="unlock-error" style="display:none; color:var(--red); font-size:0.5rem; margin-top:10px;"></div>
+        </div>
+    </div>
+
     <div id="welcome-overlay">
         <div class="ui-card welcome-text">
             <h2 class="gold-heading">STEALTH CLASSROOM</h2>
@@ -516,11 +548,11 @@
         
         <div style="margin-bottom: 10px; width: 100%; display: flex; flex-direction: column; align-items: center;">
             <label style="color: var(--gold); font-size: 0.6rem; margin-bottom: 5px;">SELECT THEME</label>
-            <select id="themeSelector" class="input-box" onchange="applyTheme(this.value)">
-                <option value="ninja">NINJA DOJO (DEFAULT)</option>
-                <option value="jungle">JURASSIC JUNGLE</option>
-                <option value="candy">CANDY LAND</option>
-                <option value="santa">STEALTH SANTA</option>
+            <select id="themeSelector" class="input-box" onchange="handleThemeChange(this.value)">
+                <option value="ninja">⚔️ NINJA DOJO (FREE)</option>
+                <option value="jungle">🦕 JURASSIC JUNGLE 🔒</option>
+                <option value="candy">🍬 CANDY LAND 🔒</option>
+                <option value="santa">🎅 STEALTH SANTA 🔒</option>
             </select>
         </div>
         <select id="timeInput" class="input-box">
@@ -553,19 +585,6 @@
             <div id="calibration-overlay-game">
                 <h2>SHHH... CALIBRATING</h2>
                 <p>Calibrating perfect silence.<br>8 seconds — mission starts automatically.</p>
-            </div>
-
-            <!-- DEBUG PANEL — remove after tuning -->
-            <div id="debug-panel" style="
-                display:none; position:absolute; top:120px; left:50%; transform:translateX(-50%);
-                background:rgba(0,0,0,0.85); border:2px solid var(--gold);
-                padding:10px 16px; font-size:0.45rem; z-index:999; text-align:left;
-                line-height:2; white-space:nowrap;
-            ">
-                <div>BASELINE: <span id="dbg-baseline" style="color:var(--cyan)">--</span></div>
-                <div>THRESHOLD: <span id="dbg-threshold" style="color:var(--gold)">--</span></div>
-                <div>LIVE VOL: <span id="dbg-volume" style="color:var(--green)">--</span></div>
-                <div>DEVICE: <span id="dbg-device" style="color:var(--pink)">--</span></div>
             </div>
 
             <div id="xp-lost-sign">XP LOST!</div>
@@ -1169,12 +1188,7 @@
                     if (isPhone)  minThreshold = 20;
 
                     currentThreshold = Math.max(minThreshold, Math.round(baseline * multiplier));
-                    console.log(`Device: ${isTablet ? 'tablet' : isPhone ? 'phone' : 'desktop'} | baseline=${baseline}, multiplier=${multiplier}, threshold=${currentThreshold}`);
-
-                    // Show debug panel
-                    document.getElementById('dbg-baseline').textContent = baseline;
-                    document.getElementById('dbg-threshold').textContent = currentThreshold;
-                    document.getElementById('dbg-device').textContent = `${isTablet ? 'TABLET' : isPhone ? 'PHONE' : 'DESKTOP'} ×${multiplier}`;
+                    console.log(`Device: ${isTablet ? 'tablet' : isPhone ? 'phone' : 'desktop'} | baseline=${baseline}, threshold=${currentThreshold}`);
                     document.getElementById('debug-panel').style.display = 'block';
 
                     isCalibrating = false;
@@ -1208,10 +1222,6 @@
                     // Peak in speech frequency range — same as calibration, beats AGC
                     const speechBins = Array.from(dataArray.slice(2, 40));
                     let volume = Math.max(...speechBins);
-
-                    // Update debug panel live volume
-                    const dbgVol = document.getElementById('dbg-volume');
-                    if (dbgVol) dbgVol.textContent = volume;
                     const bar = document.getElementById('progress-bar');
                     if (volume > currentThreshold) {
                         redTimer++;
@@ -1396,6 +1406,106 @@
         }
 
         function toggleBriefing(show) { document.getElementById('briefing-overlay').style.display = show ? 'flex' : 'none'; }
+
+        const WORKER_URL = 'https://stealth-classroom-api.dibbleandseed.workers.dev';
+        const UNLOCK_KEY = 'stealthClassroom_themesUnlocked';
+
+        function areThemesUnlocked() {
+            return localStorage.getItem(UNLOCK_KEY) === 'true';
+        }
+
+        function handleThemeChange(value) {
+            const locked = ['jungle', 'candy', 'santa'];
+            if (locked.includes(value) && !areThemesUnlocked()) {
+                // Reset selector back to ninja
+                document.getElementById('themeSelector').value = 'ninja';
+                // Show paywall with rotating preview
+                showPaywall();
+            } else {
+                applyTheme(value);
+            }
+        }
+
+        // Theme banners to rotate in paywall preview
+        const previewBanners = ['banner.png', 'dinobanner.png', 'candybanner.png', 'santabanner.png'];
+        let previewIndex = 0;
+        let previewInterval = null;
+
+        function showPaywall() {
+            document.getElementById('paywall-overlay').style.display = 'flex';
+            document.getElementById('unlock-banner').style.display = 'none';
+            document.getElementById('unlock-error').style.display = 'none';
+            document.getElementById('unlock-code-input').value = '';
+
+            // Start rotating banners every 1.5 seconds
+            previewIndex = 0;
+            document.getElementById('paywall-preview').src = previewBanners[0];
+            clearInterval(previewInterval);
+            previewInterval = setInterval(() => {
+                const img = document.getElementById('paywall-preview');
+                img.style.opacity = '0';
+                setTimeout(() => {
+                    previewIndex = (previewIndex + 1) % previewBanners.length;
+                    img.src = previewBanners[previewIndex];
+                    img.style.opacity = '1';
+                }, 300);
+            }, 1500);
+        }
+
+        function closePaywall() {
+            document.getElementById('paywall-overlay').style.display = 'none';
+            clearInterval(previewInterval);
+        }
+
+        async function submitUnlockCode() {
+            const code = document.getElementById('unlock-code-input').value.trim().toUpperCase();
+            const errorEl = document.getElementById('unlock-error');
+            const bannerEl = document.getElementById('unlock-banner');
+            errorEl.style.display = 'none';
+
+            if (!code) {
+                errorEl.textContent = 'Please enter your code.';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${WORKER_URL}/verify-code`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code }),
+                });
+                const data = await res.json();
+
+                if (data.valid) {
+                    localStorage.setItem(UNLOCK_KEY, 'true');
+                    bannerEl.style.display = 'block';
+                    // Update selector to remove lock icons
+                    updateThemeSelector();
+                    clearInterval(previewInterval);
+                    setTimeout(() => closePaywall(), 2000);
+                } else {
+                    errorEl.textContent = data.error || 'Invalid code. Please try again.';
+                    errorEl.style.display = 'block';
+                }
+            } catch (err) {
+                errorEl.textContent = 'Connection error. Please try again.';
+                errorEl.style.display = 'block';
+            }
+        }
+
+        function updateThemeSelector() {
+            const sel = document.getElementById('themeSelector');
+            sel.options[1].text = '🦕 JURASSIC JUNGLE';
+            sel.options[2].text = '🍬 CANDY LAND';
+            sel.options[3].text = '🎅 STEALTH SANTA';
+        }
+
+        // Check unlock on load and update selector
+        window.addEventListener('load', () => {
+            if (areThemesUnlocked()) updateThemeSelector();
+        });
+
     </script>
 </body>
 </html>
