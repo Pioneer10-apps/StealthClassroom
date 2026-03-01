@@ -1100,7 +1100,13 @@
                     // then resume it before requesting mic — all within the click event
                     audioContext = new (window.AudioContext || window.webkitAudioContext)();
                     await audioContext.resume();
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: {
+                            echoCancellation: false,
+                            noiseSuppression: false,
+                            autoGainControl: false,
+                        } 
+                    });
                     analyser = audioContext.createAnalyser();
                     microphone = audioContext.createMediaStreamSource(stream);
                     analyser.fftSize = 1024;
@@ -1131,7 +1137,7 @@
                     const isTablet = /iPad/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
                     const isPhone  = /iPhone|Android/i.test(ua) && !isTablet;
                     let multiplier = 1.8;        // desktop/laptop default
-                    if (isTablet) multiplier = 1.4;  // iPad/tablet — AGC compresses heavily
+                    if (isTablet) multiplier = 1.15; // iPad — AGC heavily compresses, need very tight threshold
                     if (isPhone)  multiplier = 2.2;  // phone — less AGC but smaller mic
 
                     const computed = Math.round(avg * multiplier);
