@@ -1096,13 +1096,20 @@
 
             if (!audioContext) {
                 try {
+                    // FIX: Create AudioContext FIRST (required by Mac Safari)
+                    // then resume it before requesting mic — all within the click event
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    await audioContext.resume();
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    audioContext = new AudioContext();
                     analyser = audioContext.createAnalyser();
                     microphone = audioContext.createMediaStreamSource(stream);
-                    analyser.fftSize = 256;
+                    analyser.fftSize = 1024;
                     microphone.connect(analyser);
-                } catch(e) { alert("Mic required!"); return; }
+                } catch(e) { 
+                    alert("Microphone access is required. Please allow mic access and try again."); 
+                    if (audioContext) { audioContext.close(); audioContext = null; }
+                    return; 
+                }
             } else if (audioContext.state === 'suspended') {
                 await audioContext.resume();
             }
@@ -1118,7 +1125,18 @@
                 if (count >= 50) { // 50 ticks * 100ms = 5 seconds
                     clearInterval(interval);
                     let avg = samples.reduce((a, b) => a + b) / samples.length;
-                    currentThreshold = Math.max(15, Math.min(Math.round(avg + 15), 80));
+
+                    // Auto-detect device type and set sensitivity multiplier
+                    const ua = navigator.userAgent;
+                    const isTablet = /iPad/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+                    const isPhone  = /iPhone|Android/i.test(ua) && !isTablet;
+                    let multiplier = 1.8;        // desktop/laptop default
+                    if (isTablet) multiplier = 1.4;  // iPad/tablet — AGC compresses heavily
+                    if (isPhone)  multiplier = 2.2;  // phone — less AGC but smaller mic
+
+                    const computed = Math.round(avg * multiplier);
+                    currentThreshold = Math.max(12, Math.min(computed, 90));
+                    console.log(`Device: ${isTablet ? 'tablet' : isPhone ? 'phone' : 'desktop'} | avg=${avg.toFixed(1)}, multiplier=${multiplier}, threshold=${currentThreshold}`);
                     
                     // Hide overlay and allow game loop to start tracking time
                     isCalibrating = false;
@@ -1154,7 +1172,7 @@
                     if (volume > currentThreshold) {
                         redTimer++;
                         bar.style.backgroundColor = "var(--red)";
-                        if (redTimer > 45) {
+                        if (redTimer > 25) {  // 2.5 seconds sustained noise — ignores sudden bangs
                             if (isBonusZone) {
                                 if (strikes < 3) {
                                     strikes++;
