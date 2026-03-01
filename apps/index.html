@@ -1189,7 +1189,6 @@
 
                     currentThreshold = Math.max(minThreshold, Math.round(baseline * multiplier));
                     console.log(`Device: ${isTablet ? 'tablet' : isPhone ? 'phone' : 'desktop'} | baseline=${baseline}, threshold=${currentThreshold}`);
-                    document.getElementById('debug-panel').style.display = 'block';
 
                     isCalibrating = false;
                     document.getElementById('calibration-overlay-game').style.display = 'none';
@@ -1419,8 +1418,14 @@
             if (locked.includes(value) && !areThemesUnlocked()) {
                 // Reset selector back to ninja
                 document.getElementById('themeSelector').value = 'ninja';
-                // Show paywall with rotating preview
-                showPaywall();
+                // Preview the background briefly before paywall
+                const bgMap = {
+                    jungle: 'jungle1.png',
+                    candy:  'candy1.png',
+                    santa:  'santabackground1.png',
+                };
+                document.body.style.backgroundImage = `url('${bgMap[value]}')`;
+                setTimeout(() => showPaywall(), 600);
             } else {
                 applyTheme(value);
             }
