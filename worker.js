@@ -2,30 +2,18 @@
 //  STEALTH CLASSROOM — CLOUDFLARE WORKER
 //  Paste this entire file into your Worker editor and Deploy
 // ============================================================
-//
-//  ENVIRONMENT VARIABLES TO SET IN CLOUDFLARE DASHBOARD:
-//  (Worker → Settings → Variables → Add variable)
-//
-//  STRIPE_SECRET_KEY      → sk_live_...   (from Stripe Dashboard → Developers → API Keys)
-//  STRIPE_WEBHOOK_SECRET  → whsec_...     (from Stripe Dashboard → Webhooks → your endpoint)
-//  STRIPE_PRICE_ID        → price_1...    (from Stripe Dashboard → Products → Theme Bundle → Price ID)
-//  ADMIN_SECRET           → any random string you choose (for admin access only)
-//
-//  KV NAMESPACE:
-//  Create a KV namespace called STEALTH_CODES in Workers → KV
-//  Then bind it to this worker: Worker → Settings → Variables → KV Namespace Bindings
-//  Variable name: STEALTH_CODES
-//
-// ============================================================
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname;
+    const origin = request.headers.get('Origin') || '';
 
-    // CORS headers — allow your GitHub Pages domain
+    // Allow any stealthclassroom.com origin
+    const allowedOrigin = origin.includes('stealthclassroom.com') ? origin : 'https://stealthclassroom.com';
+
     const cors = {
-      'Access-Control-Allow-Origin': 'https://stealthclassroom.com',
+      'Access-Control-Allow-Origin': allowedOrigin,
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, stripe-signature',
       'Content-Type': 'application/json',
@@ -36,11 +24,25 @@ export default {
     }
 
     // ── POST /create-checkout ─────────────────────────────
-    // Called by your landing page when teacher clicks "Buy $5"
     if (path === '/create-checkout' && request.method === 'POST') {
       try {
         const body = await request.json();
-        const email = body.email || '';
+        const email = (body.email || '').trim();
+
+        const params = {
+          'payment_method_types[]': 'card',
+          'line_items[0][price]': env.STRIPE_PRICE_ID,
+          'line_items[0][quantity]': '1',
+          'mode': 'payment',
+          'ui_mode': 'embedded',
+          'return_url': 'https://stealthclassroom.com/success?session_id={CHECKOUT_SESSION_ID}',
+          'metadata[product]': 'theme_bundle',
+        };
+
+        // Only include email if a real one was provided
+        if (email && email.includes('@')) {
+          params['customer_email'] = email;
+        }
 
         const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
           method: 'POST',
@@ -48,16 +50,7 @@ export default {
             'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}`,
             'Content-Type': 'application/x-www-form-urlencoded',
           },
-          body: new URLSearchParams({
-            'payment_method_types[]': 'card',
-            'line_items[0][price]': env.STRIPE_PRICE_ID,
-            'line_items[0][quantity]': '1',
-            'mode': 'payment',
-            'ui_mode': 'embedded',
-            'return_url': `https://stealthclassroom.com/success?session_id={CHECKOUT_SESSION_ID}`,
-            'customer_email': email,
-            'metadata[product]': 'theme_bundle',
-          }),
+          body: new URLSearchParams(params),
         });
 
         const session = await response.json();
@@ -77,12 +70,10 @@ export default {
     }
 
     // ── POST /webhook ─────────────────────────────────────
-    // Stripe calls this after successful payment
     if (path === '/webhook' && request.method === 'POST') {
       const sig = request.headers.get('stripe-signature');
       const rawBody = await request.text();
 
-      // Verify webhook signature
       let event;
       try {
         event = await verifyStripeWebhook(rawBody, sig, env.STRIPE_WEBHOOK_SECRET);
@@ -95,32 +86,24 @@ export default {
         const email = session.customer_details?.email || session.customer_email || '';
         const sessionId = session.id;
 
-        // Generate unique code
         const code = generateCode();
 
-        // Store in KV: code → email + sessionId, with 5 year expiry
         await env.STEALTH_CODES.put(`code:${code}`, JSON.stringify({
           email,
           sessionId,
           used: false,
           createdAt: new Date().toISOString(),
-        }), { expirationTtl: 157680000 }); // 5 years
+        }), { expirationTtl: 157680000 });
 
-        // Also index by session so success page can retrieve code
         await env.STEALTH_CODES.put(`session:${sessionId}`, code, { expirationTtl: 157680000 });
 
-        // Send email via Stripe (the receipt will include metadata)
-        // Note: Stripe automatically emails the customer their receipt.
-        // We store the code in the session metadata so it shows on the receipt page.
         await fetch(`https://api.stripe.com/v1/checkout/sessions/${sessionId}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}`,
             'Content-Type': 'application/x-www-form-urlencoded',
           },
-          body: new URLSearchParams({
-            'metadata[unlock_code]': code,
-          }),
+          body: new URLSearchParams({ 'metadata[unlock_code]': code }),
         });
       }
 
@@ -128,7 +111,6 @@ export default {
     }
 
     // ── GET /get-code?session_id=... ──────────────────────
-    // Called by success page to retrieve the unique code
     if (path === '/get-code' && request.method === 'GET') {
       const sessionId = url.searchParams.get('session_id');
       if (!sessionId) {
@@ -144,7 +126,6 @@ export default {
     }
 
     // ── POST /verify-code ─────────────────────────────────
-    // Called by the app when teacher enters their unlock code
     if (path === '/verify-code' && request.method === 'POST') {
       try {
         const body = await request.json();
@@ -165,7 +146,6 @@ export default {
           return new Response(JSON.stringify({ valid: false, error: 'This code has already been used on another device.' }), { headers: cors });
         }
 
-        // Mark as used
         data.used = true;
         data.usedAt = new Date().toISOString();
         await env.STEALTH_CODES.put(`code:${code}`, JSON.stringify(data), { expirationTtl: 157680000 });
@@ -177,20 +157,16 @@ export default {
       }
     }
 
-    // ── 404 ───────────────────────────────────────────────
     return new Response(JSON.stringify({ error: 'Not found' }), { status: 404, headers: cors });
   }
 };
 
-// ── HELPERS ───────────────────────────────────────────────
-
 function generateCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I to avoid confusion
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const segment = (len) => Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
   return `SC-${segment(4)}-${segment(4)}-${segment(4)}`;
 }
 
-// Stripe webhook signature verification (Web Crypto API)
 async function verifyStripeWebhook(payload, sigHeader, secret) {
   const parts = sigHeader.split(',').reduce((acc, part) => {
     const [k, v] = part.split('=');
@@ -214,8 +190,6 @@ async function verifyStripeWebhook(payload, sigHeader, secret) {
   const expected = Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
 
   if (expected !== signature) throw new Error('Signature mismatch');
-
-  // Reject if timestamp is older than 5 minutes
   if (Math.abs(Date.now() / 1000 - parseInt(timestamp)) > 300) throw new Error('Timestamp too old');
 
   return JSON.parse(payload);
