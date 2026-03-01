@@ -360,24 +360,32 @@
     async function openModal() {
       document.getElementById('stripe-modal').classList.add('open');
       document.getElementById('pay-msg').textContent = '';
+      document.getElementById('submit-pay').style.display = 'none';
 
-      if (elements) return; // already loaded
+      if (elements) {
+        document.getElementById('submit-pay').style.display = 'block';
+        return;
+      }
+
+      setPayMsg('LOADING CHECKOUT...', 'ok');
 
       try {
         const res  = await fetch(`${WORKER_URL}/create-checkout`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: '' }),
+          body: JSON.stringify({ email: 'pending@stealthclassroom.com' }),
         });
         const data = await res.json();
-        if (data.error) { setPayMsg(data.error, 'err'); return; }
+        if (data.error) { setPayMsg('Error: ' + data.error, 'err'); return; }
 
         stripe   = Stripe(STRIPE_KEY);
         elements = stripe.elements({ clientSecret: data.clientSecret, appearance: stripeTheme() });
         elements.create('payment').mount('#payment-element');
+        setPayMsg('', '');
+        document.getElementById('submit-pay').style.display = 'block';
 
       } catch (e) {
-        setPayMsg('Connection error. Please try again.', 'err');
+        setPayMsg('Connection error: ' + e.message, 'err');
       }
     }
 
