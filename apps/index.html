@@ -623,6 +623,16 @@
     </div>
 
     <img id="ninja-mascot" src="ninja1.png" alt="Ninja">
+    <!-- Theme preview flash mascot — appears briefly when a locked theme is selected -->
+    <img id="theme-flash-mascot" src="" alt="" style="
+        position:fixed; bottom:60px; right:40px;
+        width:180px; height:auto;
+        image-rendering:pixelated;
+        filter: drop-shadow(4px 4px 0 rgba(0,0,0,0.8));
+        opacity:0; transform:translateY(20px);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        pointer-events:none; z-index:50;
+    ">
 
     <div style="display: none;">
         <img src="background.png"><img src="background2.png"><img src="background3.png">
@@ -1416,16 +1426,31 @@
         function handleThemeChange(value) {
             const locked = ['jungle', 'candy', 'santa'];
             if (locked.includes(value) && !areThemesUnlocked()) {
-                // Reset selector back to ninja
                 document.getElementById('themeSelector').value = 'ninja';
-                // Preview the background briefly before paywall
+
                 const bgMap = {
-                    jungle: 'jungle1.png',
-                    candy:  'candy1.png',
-                    santa:  'santabackground1.png',
+                    jungle: { bg: 'jungle1.png',          mascot: 'dino1.png'  },
+                    candy:  { bg: 'candy1.png',            mascot: 'bear1.png'  },
+                    santa:  { bg: 'santabackground1.png',  mascot: 'santa1.png' },
                 };
-                document.body.style.backgroundImage = `url('${bgMap[value]}')`;
-                setTimeout(() => showPaywall(), 600);
+                const t = bgMap[value];
+
+                // Flash background
+                document.body.style.backgroundImage = `url('${t.bg}')`;
+
+                // Flash character
+                const flash = document.getElementById('theme-flash-mascot');
+                flash.src = t.mascot;
+                flash.style.opacity = '1';
+                flash.style.transform = 'translateY(0)';
+
+                // After 1.2s fade out character and show paywall
+                setTimeout(() => {
+                    flash.style.opacity = '0';
+                    flash.style.transform = 'translateY(20px)';
+                    showPaywall();
+                }, 1200);
+
             } else {
                 applyTheme(value);
             }
