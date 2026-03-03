@@ -278,6 +278,10 @@
         #escapeBtn { background-color: var(--orange); border-color: var(--gold); font-size: 0.7rem; padding: 10px 20px; }
         #escapeBtn:hover { border-color: var(--white); background-color: #e65100; }
         
+        /* RECALIBRATE BUTTON */
+        #recalibrateBtn { background-color: var(--ninja-navy); border-color: var(--gold); font-size: 0.7rem; padding: 10px 20px; }
+        #recalibrateBtn:hover { border-color: var(--white); }
+        
         /* NEW CALIBRATION OVERLAY ON GAME SCREEN */
         #calibration-overlay-game {
             display: none;
@@ -603,6 +607,7 @@
                 <button id="finishBtn" onclick="endSession()">CLAIM XP & FINISH</button>
                 <button id="escapeBtn" onclick="escapeMission()">ESCAPE WITH XP</button>
                 <button id="pauseBtn" onclick="togglePause()">PAUSE</button>
+                <button id="recalibrateBtn" onclick="recalibrateMid()">RECALIBRATE</button>
                 <button id="abortBtn" onclick="abortMission()">ABORT MISSION</button>
             </div>
         </div>
@@ -1177,20 +1182,19 @@
                 if (count >= 80) { // 80 ticks * 100ms = 8 seconds
                     clearInterval(interval);
 
-                    // Use 90th percentile of silence peaks as baseline (ignores outlier sounds)
+                    // Use 75th percentile of silence peaks as baseline (truer quiet reading)
                     const sorted = [...samples].sort((a, b) => a - b);
-                    const baseline = sorted[Math.floor(sorted.length * 0.9)];
+                    const baseline = sorted[Math.floor(sorted.length * 0.75)];
 
                     // Auto-detect device
                     const ua = navigator.userAgent;
                     const isTablet = /iPad/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
                     const isPhone  = /iPhone|Android/i.test(ua) && !isTablet;
 
-                    // Percentage-based threshold — scales with any room's noise level
-                    // Threshold is always X% louder than the calibrated baseline
-                    let multiplier = 1.3;          // desktop
-                    if (isTablet) multiplier = 1.3; // iPad
-                    if (isPhone)  multiplier = 1.3; // phone
+                    // 1.15x — scales with room, tighter gap above true quiet baseline
+                    let multiplier = 1.15;          // desktop
+                    if (isTablet) multiplier = 1.15; // iPad — floor does the heavy lifting
+                    if (isPhone)  multiplier = 1.15; // phone
 
                     // Minimum floors per device — prevents AGC zeroing out the baseline
                     let minThreshold = 25;
@@ -1343,6 +1347,44 @@
 
         function togglePause() { isPaused = !isPaused; document.getElementById('pauseBtn').innerText = isPaused ? "RESUME" : "PAUSE"; }
 
+        function recalibrateMid() {
+            if (isCalibrating) return;
+            isCalibrating = true;
+            isPaused = true;
+            document.getElementById('recalibrateBtn').disabled = true;
+            document.getElementById('calibration-overlay-game').style.display = 'block';
+
+            let samples = [], count = 0;
+            const interval = setInterval(() => {
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(dataArray);
+                const speechBins = Array.from(dataArray.slice(2, 40));
+                const peak = Math.max(...speechBins);
+                samples.push(peak); count++;
+
+                if (count >= 80) {
+                    clearInterval(interval);
+                    const sorted = [...samples].sort((a, b) => a - b);
+                    const baseline = sorted[Math.floor(sorted.length * 0.75)];
+
+                    const ua = navigator.userAgent;
+                    const isTablet = /iPad/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+                    const isPhone  = /iPhone|Android/i.test(ua) && !isTablet;
+                    let multiplier = 1.15;
+                    let minThreshold = 25;
+                    if (isTablet) minThreshold = 15;
+                    if (isPhone)  minThreshold = 20;
+                    currentThreshold = Math.max(minThreshold, Math.round(baseline * multiplier));
+
+                    isCalibrating = false;
+                    isPaused = false;
+                    document.getElementById('recalibrateBtn').disabled = false;
+                    document.getElementById('calibration-overlay-game').style.display = 'none';
+                    document.getElementById('pauseBtn').innerText = 'PAUSE';
+                }
+            }, 100);
+        }
+
         function abortMission() {
             if(confirm("ABORT MISSION? This will reset the streak to 0.")) {
                 let key = 'ninja_' + currentClassName.toUpperCase();
@@ -1438,18 +1480,25 @@
                 // Flash background
                 document.body.style.backgroundImage = `url('${t.bg}')`;
 
-                // Flash character
+                // Flash character — preload image first so Android doesn't skip it
                 const flash = document.getElementById('theme-flash-mascot');
-                flash.src = t.mascot;
-                flash.style.opacity = '1';
-                flash.style.transform = 'translateY(0)';
-
-                // After 1.2s fade out character and show paywall
-                setTimeout(() => {
-                    flash.style.opacity = '0';
-                    flash.style.transform = 'translateY(20px)';
+                const img = new Image();
+                img.onload = () => {
+                    flash.src = t.mascot;
+                    flash.style.opacity = '1';
+                    flash.style.transform = 'translateY(0)';
+                    // After 1.5s fade out and show paywall
+                    setTimeout(() => {
+                        flash.style.opacity = '0';
+                        flash.style.transform = 'translateY(20px)';
+                        showPaywall();
+                    }, 1500);
+                };
+                img.onerror = () => {
+                    // Image failed to load — skip flash and go straight to paywall
                     showPaywall();
-                }, 1200);
+                };
+                img.src = t.mascot;
 
             } else {
                 applyTheme(value);
@@ -1485,6 +1534,13 @@
         function closePaywall() {
             document.getElementById('paywall-overlay').style.display = 'none';
             clearInterval(previewInterval);
+            // Reset background and selector back to ninja theme
+            document.getElementById('themeSelector').value = 'ninja';
+            applyTheme('ninja');
+            // Hide flash mascot cleanly
+            const flash = document.getElementById('theme-flash-mascot');
+            flash.style.opacity = '0';
+            flash.style.transform = 'translateY(20px)';
         }
 
         async function submitUnlockCode() {
