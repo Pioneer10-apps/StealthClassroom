@@ -629,6 +629,45 @@
                 <button onclick="location.reload()" style="width: 80%;">MAIN MENU</button>
             </div>
         </div>
+
+        <!-- Save button — only visible if XP was earned this session -->
+        <button id="save-btn" onclick="openSaveModal()" style="
+            position: fixed; bottom: 18px; right: 18px;
+            background: rgba(0,0,0,0.75); color: #ffd700;
+            border: 2px solid #ffd700; border-radius: 10px;
+            padding: 8px 16px; font-family: inherit;
+            font-size: 0.78rem; font-weight: 700;
+            letter-spacing: 0.05em; cursor: pointer;
+            z-index: 999; display: none;
+        ">💾 SAVE</button>
+    </div>
+
+    <!-- Save PIN modal -->
+    <div id="save-modal" style="
+        display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,0.75); z-index: 1000;
+        align-items: center; justify-content: center;
+    ">
+        <div style="
+            background: #1a1a2e; border: 3px solid #ffd700;
+            border-radius: 16px; padding: 32px 28px;
+            width: 300px; text-align: center; font-family: inherit;
+        ">
+            <h3 style="color: #ffd700; font-size: 1.1rem; margin-bottom: 8px; letter-spacing: 0.05em;">SAVE PROGRESS</h3>
+            <p style="color: #ccc; font-size: 0.8rem; margin-bottom: 20px; line-height: 1.5;">Enter a 6-digit PIN to save.<br>Use the same PIN each time to update your class.</p>
+            <input id="save-pin-input" type="number" placeholder="6-digit PIN" style="
+                width: 100%; padding: 12px; border-radius: 8px;
+                border: 2px solid #ffd700; background: #0d0d1a;
+                color: #fff; font-size: 1.2rem; text-align: center;
+                letter-spacing: 0.2em; font-family: inherit;
+                margin-bottom: 16px; -moz-appearance: textfield;
+            ">
+            <div id="save-msg" style="color: #ff6b6b; font-size: 0.78rem; min-height: 20px; margin-bottom: 12px;"></div>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="closeSaveModal()" style="flex: 1; background: transparent; border: 2px solid #666; color: #aaa; padding: 10px; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 0.85rem;">CANCEL</button>
+                <button onclick="saveClass()" style="flex: 1; background: #ffd700; border: none; color: #000; padding: 10px; border-radius: 8px; cursor: pointer; font-family: inherit; font-weight: 700; font-size: 0.85rem;">SAVE</button>
+            </div>
+        </div>
     </div>
 
     <img id="ninja-mascot" src="ninja1.png" alt="Ninja">
@@ -1424,6 +1463,7 @@
             
             document.getElementById('game-container').style.display = 'none';
             document.getElementById('results-screen').style.display = 'flex';
+            showSaveBtnIfEarned(finalXPAdded);
             
             // SWITCH TO WIN BG (Using current theme)
             document.body.style.backgroundImage = `url('${themes[currentThemeName].bg_win}')`;
@@ -1595,6 +1635,69 @@
         window.addEventListener('load', () => {
             if (areThemesUnlocked()) updateThemeSelector();
         });
+
+        // ── SAVE / LOAD CLASS ─────────────────────────────
+        const WORKER_URL = 'https://stealth-classroom-api.dibbleandseed.workers.dev';
+
+        function openSaveModal() {
+            document.getElementById('save-modal').style.display = 'flex';
+            document.getElementById('save-msg').textContent = '';
+            document.getElementById('save-pin-input').value = '';
+            document.getElementById('save-pin-input').focus();
+        }
+
+        function closeSaveModal() {
+            document.getElementById('save-modal').style.display = 'none';
+        }
+
+        async function saveClass() {
+            const pin = String(document.getElementById('save-pin-input').value).trim();
+            const msgEl = document.getElementById('save-msg');
+
+            if (pin.length !== 6 || isNaN(pin)) {
+                msgEl.style.color = '#ff6b6b';
+                msgEl.textContent = 'PIN must be exactly 6 digits.';
+                return;
+            }
+
+            const key = 'ninja_' + currentClassName.toUpperCase();
+            const data = JSON.parse(localStorage.getItem(key) || '{"totalXP":0,"streak":0}');
+
+            msgEl.style.color = '#ffd700';
+            msgEl.textContent = 'Saving...';
+
+            try {
+                const res = await fetch(`${WORKER_URL}/save-class`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        pin,
+                        className: currentClassName.toUpperCase(),
+                        points: data.totalXP,
+                        streak: data.streak,
+                    }),
+                });
+                const result = await res.json();
+                if (result.ok) {
+                    msgEl.style.color = '#06b86e';
+                    msgEl.textContent = '✓ Saved! Use this PIN to restore on any device.';
+                    setTimeout(closeSaveModal, 2000);
+                } else {
+                    msgEl.style.color = '#ff6b6b';
+                    msgEl.textContent = result.error || 'Save failed. Try again.';
+                }
+            } catch (e) {
+                msgEl.style.color = '#ff6b6b';
+                msgEl.textContent = 'Connection error. Check your internet.';
+            }
+        }
+
+        // Show save button on results screen only if XP was earned
+        function showSaveBtnIfEarned(xpEarned) {
+            if (xpEarned > 0) {
+                document.getElementById('save-btn').style.display = 'block';
+            }
+        }
 
     </script>
 </body>
