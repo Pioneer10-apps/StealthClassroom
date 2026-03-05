@@ -373,7 +373,7 @@
         const res  = await fetch(`${WORKER_URL}/create-checkout`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: 'pending@stealthclassroom.com' }),
+          body: JSON.stringify({ email: '' }),
         });
         const data = await res.json();
         if (data.error) { setPayMsg('Error: ' + data.error, 'err'); return; }
@@ -400,7 +400,7 @@
 
       const { error } = await stripe.confirmPayment({
         elements,
-        confirmParams: { return_url: `${window.location.origin}/success` },
+        confirmParams: { return_url: `https://stealthclassroom.com/success` },
       });
 
       if (error) {
