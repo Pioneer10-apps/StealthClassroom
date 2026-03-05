@@ -2,22 +2,44 @@
 //  STEALTH CLASSROOM — CLOUDFLARE WORKER
 //  Paste this entire file into your Worker editor and Deploy
 // ============================================================
+//
+//  ENVIRONMENT VARIABLES TO SET IN CLOUDFLARE DASHBOARD:
+//  (Worker → Settings → Variables → Add variable)
+//
+//  STRIPE_SECRET_KEY      → sk_live_...   (from Stripe Dashboard → Developers → API Keys)
+//  STRIPE_WEBHOOK_SECRET  → whsec_...     (from Stripe Dashboard → Webhooks → your endpoint)
+//  STRIPE_PRICE_ID        → price_1...    (from Stripe Dashboard → Products → Theme Bundle → Price ID)
+//  ADMIN_SECRET           → any random string you choose (for admin access only)
+//
+//  KV NAMESPACE:
+//  Create a KV namespace called STEALTH_CODES in Workers → KV
+//  Then bind it to this worker: Worker → Settings → Variables → KV Namespace Bindings
+//  Variable name: STEALTH_CODES
+//
+// ============================================================
+
+const ALLOWED_ORIGINS = [
+  'https://stealthclassroom.com',
+  'https://www.stealthclassroom.com',
+  'https://dibbleandseed.github.io',
+];
+
+function getCors(request) {
+  const origin = request.headers.get('Origin') || '';
+  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowed,
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, stripe-signature',
+    'Content-Type': 'application/json',
+  };
+}
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname;
-    const origin = request.headers.get('Origin') || '';
-
-    // Allow any stealthclassroom.com origin
-    const allowedOrigin = origin.includes('stealthclassroom.com') ? origin : 'https://stealthclassroom.com';
-
-    const cors = {
-      'Access-Control-Allow-Origin': allowedOrigin,
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, stripe-signature',
-      'Content-Type': 'application/json',
-    };
+    const cors = getCors(request);
 
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: cors });
@@ -35,11 +57,11 @@ export default {
           'line_items[0][quantity]': '1',
           'mode': 'payment',
           'ui_mode': 'embedded',
-          'return_url': 'https://stealthclassroom.com/success?session_id={CHECKOUT_SESSION_ID}',
+          'return_url': `https://stealthclassroom.com/success?session_id={CHECKOUT_SESSION_ID}`,
           'metadata[product]': 'theme_bundle',
         };
 
-        // Only include email if a real one was provided
+        // Only add email if one was provided — avoids Stripe rejecting fake emails
         if (email && email.includes('@')) {
           params['customer_email'] = email;
         }
@@ -91,7 +113,8 @@ export default {
         await env.STEALTH_CODES.put(`code:${code}`, JSON.stringify({
           email,
           sessionId,
-          used: false,
+          activations: 0,       // track uses rather than burning the code
+          maxActivations: 3,    // allow up to 3 devices (iPad, laptop, home)
           createdAt: new Date().toISOString(),
         }), { expirationTtl: 157680000 });
 
@@ -103,7 +126,9 @@ export default {
             'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}`,
             'Content-Type': 'application/x-www-form-urlencoded',
           },
-          body: new URLSearchParams({ 'metadata[unlock_code]': code }),
+          body: new URLSearchParams({
+            'metadata[unlock_code]': code,
+          }),
         });
       }
 
@@ -142,12 +167,13 @@ export default {
 
         const data = JSON.parse(raw);
 
-        if (data.used) {
-          return new Response(JSON.stringify({ valid: false, error: 'This code has already been used on another device.' }), { headers: cors });
+        // Allow up to maxActivations devices instead of burning on first use
+        if (data.activations >= data.maxActivations) {
+          return new Response(JSON.stringify({ valid: false, error: 'This code has reached its device limit. Contact support at stealthclassroom.com.' }), { headers: cors });
         }
 
-        data.used = true;
-        data.usedAt = new Date().toISOString();
+        data.activations += 1;
+        data.lastUsedAt = new Date().toISOString();
         await env.STEALTH_CODES.put(`code:${code}`, JSON.stringify(data), { expirationTtl: 157680000 });
 
         return new Response(JSON.stringify({ valid: true }), { headers: cors });
@@ -157,9 +183,65 @@ export default {
       }
     }
 
+    // ── POST /save-class ──────────────────────────────────
+    // Saves class name + points against a PIN
+    if (path === '/save-class' && request.method === 'POST') {
+      try {
+        const body = await request.json();
+        const pin = (body.pin || '').trim();
+        const className = (body.className || '').trim();
+        const points = body.points ?? 0;
+
+        if (!pin || pin.length !== 6) {
+          return new Response(JSON.stringify({ ok: false, error: 'PIN must be 6 digits' }), { status: 400, headers: cors });
+        }
+        if (!className) {
+          return new Response(JSON.stringify({ ok: false, error: 'Class name required' }), { status: 400, headers: cors });
+        }
+
+        await env.STEALTH_CODES.put(`class:${pin}`, JSON.stringify({
+          className,
+          points,
+          savedAt: new Date().toISOString(),
+        }), { expirationTtl: 157680000 });
+
+        return new Response(JSON.stringify({ ok: true }), { headers: cors });
+
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: cors });
+      }
+    }
+
+    // ── POST /load-class ──────────────────────────────────
+    // Loads class name + points for a given PIN
+    if (path === '/load-class' && request.method === 'POST') {
+      try {
+        const body = await request.json();
+        const pin = (body.pin || '').trim();
+
+        if (!pin) {
+          return new Response(JSON.stringify({ ok: false, error: 'PIN required' }), { status: 400, headers: cors });
+        }
+
+        const raw = await env.STEALTH_CODES.get(`class:${pin}`);
+        if (!raw) {
+          return new Response(JSON.stringify({ ok: false, error: 'No class found for that PIN' }), { headers: cors });
+        }
+
+        const data = JSON.parse(raw);
+        return new Response(JSON.stringify({ ok: true, ...data }), { headers: cors });
+
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: cors });
+      }
+    }
+
+    // ── 404 ───────────────────────────────────────────────
     return new Response(JSON.stringify({ error: 'Not found' }), { status: 404, headers: cors });
   }
 };
+
+// ── HELPERS ───────────────────────────────────────────────
 
 function generateCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
