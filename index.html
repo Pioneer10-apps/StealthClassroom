@@ -230,24 +230,6 @@
   <img id="mascot" src="/apps/ninja1.png" alt="">
 
   <!-- STRIPE MODAL -->
-  <div id="stripe-modal">
-    <div class="modal-card">
-      <button class="modal-close" onclick="closeModal()">✕ CLOSE</button>
-      <h2>🔓 UNLOCK THEME BUNDLE</h2>
-      <div class="modal-price">$5</div>
-      <p class="modal-once">Pay once. Own forever.</p>
-      <ul class="modal-includes">
-        <li>Jurassic Jungle theme</li>
-        <li>Candy Land theme</li>
-        <li>Stealth Santa theme</li>
-        <li>All future themes free</li>
-      </ul>
-      <div id="payment-element"></div>
-      <button id="submit-pay" onclick="submitPayment()">🔒 PAY $5 — UNLOCK THEMES</button>
-      <div id="pay-msg"></div>
-    </div>
-  </div>
-
   <div class="content">
     <div class="hero">
       <img src="/apps/banner.png" alt="Stealth Classroom" class="hero-banner" id="hero-banner">
@@ -255,7 +237,7 @@
       <p class="sub">The gamified noise monitor students actually want to beat.</p>
       <div class="btn-row">
         <a href="/apps" class="btn">▶ LAUNCH APP</a>
-        <button onclick="openModal()" class="btn btn-outline">🔓 UNLOCK THEMES $5</button>
+        <button class="btn btn-outline" disabled style="opacity:0.5; cursor:default;">🔒 THEMES — COMING SOON</button>
       </div>
     </div>
 
@@ -297,9 +279,6 @@
 
   <script src="https://js.stripe.com/v3/"></script>
   <script>
-    const STRIPE_KEY  = 'pk_live_51T5fGzFL7tsvyN9BhX3Tw2OPhJr0s6ibIG0JuKEONhxF9EFiV3WbUCBCIAIA5l2jbbXaQpcNyfJYEzhggdJsobWt00bgV6CU0z';
-    const WORKER_URL  = 'https://stealth-classroom-api.dibbleandseed.workers.dev';
-
     const themes = {
       ninja:  { bg: '/apps/background.png',        mascot: '/apps/ninja1.png',  banner: '/apps/banner.png' },
       jungle: { bg: '/apps/jungle1.png',            mascot: '/apps/dino1.png',   banner: '/apps/dinobanner.png' },
@@ -352,80 +331,6 @@
         mascot.src = t.mascot;
         mascot.classList.add('visible');
       }, 200);
-    }
-
-    // ── STRIPE ──────────────────────────────────────────
-    let stripe, elements;
-
-    async function openModal() {
-      document.getElementById('stripe-modal').classList.add('open');
-      document.getElementById('pay-msg').textContent = '';
-      document.getElementById('submit-pay').style.display = 'none';
-
-      if (elements) {
-        document.getElementById('submit-pay').style.display = 'block';
-        return;
-      }
-
-      setPayMsg('LOADING CHECKOUT...', 'ok');
-
-      try {
-        const res  = await fetch(`${WORKER_URL}/create-checkout`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: '' }),
-        });
-        const data = await res.json();
-        if (data.error) { setPayMsg('Error: ' + data.error, 'err'); return; }
-
-        stripe   = Stripe(STRIPE_KEY);
-        elements = stripe.elements({ clientSecret: data.clientSecret, appearance: stripeTheme() });
-        elements.create('payment').mount('#payment-element');
-        setPayMsg('', '');
-        document.getElementById('submit-pay').style.display = 'block';
-
-      } catch (e) {
-        setPayMsg('Connection error: ' + e.message, 'err');
-      }
-    }
-
-    function closeModal() {
-      document.getElementById('stripe-modal').classList.remove('open');
-    }
-
-    async function submitPayment() {
-      const btn = document.getElementById('submit-pay');
-      btn.disabled = true; btn.textContent = 'PROCESSING...';
-      setPayMsg('', '');
-
-      const { error } = await stripe.confirmPayment({
-        elements,
-        confirmParams: { return_url: `https://stealthclassroom.com/success` },
-      });
-
-      if (error) {
-        setPayMsg(error.message, 'err');
-        btn.disabled = false;
-        btn.textContent = '🔒 PAY $5 — UNLOCK THEMES';
-      }
-    }
-
-    function setPayMsg(msg, type) {
-      const el = document.getElementById('pay-msg');
-      el.textContent = msg;
-      el.className = type === 'err' ? 'pay-err' : 'pay-ok';
-    }
-
-    function stripeTheme() {
-      return {
-        theme: 'night',
-        variables: { colorPrimary: '#ffd700', colorBackground: '#0a0c20', colorText: '#f0f0f0', colorDanger: '#ff4444', fontFamily: '"Press Start 2P", monospace', spacingUnit: '4px', borderRadius: '0px' },
-        rules: {
-          '.Input': { border: '2px solid #ffd700', padding: '12px' },
-          '.Input:focus': { border: '2px solid #00e5ff' },
-          '.Label': { fontSize: '10px', letterSpacing: '1px' },
-        }
-      };
     }
 
     // Preload all theme images silently
