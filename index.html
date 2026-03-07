@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stealth Classroom</title>
+  <meta name="theme-color" content="#1a1a2e">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: 'Press Start 2P', monospace; overflow-x: hidden; }
+
+    body {
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      color: #f0f0f0;
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: space-between;
+      padding: 0 16px 30px;
+      transition: background-image 0s;
+    }
+
+    /* Background crossfade layer */
+    #bg-layer {
+      position: fixed; inset: 0; z-index: 0;
+      background-size: cover; background-position: center;
+      background-repeat: no-repeat;
+      transition: opacity 0.6s ease;
+      opacity: 0;
+    }
+
+    #bg-base {
+      position: fixed; inset: 0; z-index: 0;
+      background-size: cover; background-position: center;
+      background-repeat: no-repeat;
+      background-image: url('/apps/background.png');
+    }
+
+    /* Dark overlay */
+    #overlay {
+      position: fixed; inset: 0; z-index: 1;
+      background: rgba(0,0,0,0.5);
+      pointer-events: none;
+    }
+
+    /* Scanlines */
+    #scanlines {
+      position: fixed; inset: 0; z-index: 2;
+      background: repeating-linear-gradient(0deg,
+        transparent, transparent 2px,
+        rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px);
+      pointer-events: none;
+    }
+
+    .content {
+      position: relative; z-index: 3;
+      width: 100%; display: flex;
+      flex-direction: column; align-items: center;
+    }
+
+    /* HERO */
+    .hero {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; padding: 60px 20px 20px;
+      width: 100%; position: relative;
+    }
+
+    /* Mascot character */
+    #mascot {
+      position: fixed;
+      bottom: 180px; right: 40px;
+      width: 160px; height: auto;
+      image-rendering: pixelated;
+      filter: drop-shadow(4px 4px 0 rgba(0,0,0,0.8));
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      opacity: 0; transform: translateY(20px);
+      pointer-events: none;
+      z-index: 4;
+      animation: none;
+    }
+    #mascot.visible {
+      opacity: 1; transform: translateY(0);
+      animation: mascot-float 3s ease-in-out infinite;
+    }
+    @keyframes mascot-float {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-12px); }
+    }
+
+    .hero-banner {
+      max-width: 380px; width: 85%;
+      image-rendering: pixelated; margin-bottom: 24px;
+      filter: drop-shadow(0 0 20px rgba(255,215,0,0.4));
+      animation: float 3s ease-in-out infinite;
+      transition: opacity 0.3s;
+    }
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+
+    .tagline {
+      font-family: 'VT323', monospace; font-size: 1.9rem;
+      color: #f0f0f0; text-shadow: 2px 2px #000;
+      margin-bottom: 10px; max-width: 420px; line-height: 1.3;
+    }
+    .tagline .gold { color: #ffd700; }
+
+    .sub {
+      font-family: 'VT323', monospace; font-size: 1.3rem;
+      color: #aaa; margin-bottom: 24px;
+      max-width: 360px; line-height: 1.5;
+    }
+
+    .btn {
+      background: #ffd700; color: #000; border: 4px solid #000;
+      font-family: 'Press Start 2P', monospace; font-size: 0.65rem;
+      padding: 16px 28px; cursor: pointer; box-shadow: 5px 5px 0 #000;
+      text-decoration: none; display: inline-block;
+      transition: all 0.1s; margin: 6px;
+    }
+    .btn:hover  { transform: translate(-3px,-3px); box-shadow: 8px 8px 0 #000; background: #ffe033; }
+    .btn:active { transform: translate(2px,2px);   box-shadow: 2px 2px 0 #000; }
+
+    .btn-outline {
+      background: transparent; color: #f0f0f0; border-color: #f0f0f0;
+      box-shadow: 5px 5px 0 rgba(255,255,255,0.15);
+    }
+    .btn-outline:hover { border-color: #ffd700; color: #ffd700; background: transparent; }
+
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+
+    /* STRIPE MODAL */
+    #stripe-modal {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.92);
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    #stripe-modal.open { display: flex; }
+    .modal-card {
+      background: #1a1a2e; border: 4px solid #ffd700;
+      box-shadow: 8px 8px 0 #000; padding: 40px 30px;
+      max-width: 460px; width: 100%; text-align: center;
+      position: relative;
+    }
+    .modal-card h2 { font-size: 0.8rem; color: #ffd700; margin-bottom: 8px; }
+    .modal-price { font-size: 2.5rem; color: #ffd700; text-shadow: 3px 3px #000; margin: 16px 0 4px; }
+    .modal-once { font-family: 'VT323', monospace; font-size: 1.2rem; color: #aaa; margin-bottom: 20px; }
+    .modal-includes { text-align: left; margin-bottom: 24px; list-style: none; }
+    .modal-includes li { font-family: 'VT323', monospace; font-size: 1.15rem; color: #f0f0f0; padding: 6px 0; border-bottom: 1px solid rgba(255,215,0,0.15); display: flex; gap: 10px; }
+    .modal-includes li::before { content: '▶'; color: #ffd700; font-size: 0.5rem; padding-top: 2px; }
+    #payment-element { background: #0a0c20; border: 2px solid #ffd700; padding: 16px; margin-bottom: 16px; }
+    #submit-pay {
+      width: 100%; background: #4cff91; color: #000; border: 4px solid #000;
+      font-family: 'Press Start 2P', monospace; font-size: 0.65rem;
+      padding: 17px; cursor: pointer; box-shadow: 5px 5px 0 #000; transition: all 0.1s;
+    }
+    #submit-pay:hover { transform: translate(-2px,-2px); box-shadow: 7px 7px 0 #000; }
+    #submit-pay:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    #pay-msg { font-family: 'VT323', monospace; font-size: 1.1rem; margin-top: 10px; min-height: 20px; }
+    .pay-err { color: #ff4444; } .pay-ok { color: #4cff91; }
+    .modal-close {
+      position: absolute; top: 12px; right: 16px;
+      background: none; border: none; color: #888;
+      font-family: 'Press Start 2P', monospace; font-size: 0.5rem;
+      cursor: pointer;
+    }
+    .modal-close:hover { color: #ffd700; }
+
+    /* THEME STRIP */
+    .themes-section { width: 100%; max-width: 700px; margin: 20px auto 0; text-align: center; }
+
+    .themes-label {
+      font-size: 0.48rem; color: #ffd700;
+      letter-spacing: 2px; margin-bottom: 16px; text-shadow: 2px 2px #000;
+    }
+
+    .themes-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+    .theme-thumb {
+      position: relative; flex: 1; min-width: 100px; max-width: 160px;
+      background: rgba(0,0,0,0.65); border: 3px solid;
+      padding: 14px 8px 14px; text-align: center;
+      transition: transform 0.15s, border-color 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+    }
+    .theme-thumb:hover  { transform: translateY(-6px); }
+    .theme-thumb.active { box-shadow: 0 0 16px rgba(255,215,0,0.6); }
+    .theme-thumb.free   { border-color: #4cff91; }
+    .theme-thumb.locked { border-color: #ffd700; }
+    .theme-thumb.active.free   { border-color: #4cff91; box-shadow: 0 0 16px rgba(76,255,145,0.5); }
+    .theme-thumb.active.locked { border-color: #ffd700; box-shadow: 0 0 16px rgba(255,215,0,0.5); }
+
+    .theme-thumb img { width: 100%; max-width: 110px; height: auto; image-rendering: pixelated; display: block; margin: 0 auto 8px; filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.7)); }
+    .theme-thumb h3 { font-size: 0.37rem; color: #f0f0f0; line-height: 1.7; }
+
+    .theme-badge {
+      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+      font-size: 0.34rem; padding: 3px 8px; border: 2px solid #000; white-space: nowrap;
+    }
+    .theme-thumb.free   .theme-badge { background: #4cff91; color: #000; }
+    .theme-thumb.locked .theme-badge { background: #ffd700; color: #000; }
+
+    .lock-icon { position: absolute; bottom: 7px; right: 7px; font-size: 1rem; filter: drop-shadow(1px 1px 0 #000); }
+
+    .footer-note { font-family: 'VT323', monospace; font-size: 1rem; color: #555; margin-top: 20px; text-align: center; }
+
+    @media (max-width: 480px) {
+      .hero-banner { max-width: 260px; }
+      .tagline { font-size: 1.5rem; }
+      .theme-thumb { min-width: 76px; }
+      .theme-thumb h3 { font-size: 0.3rem; }
+      .btn { font-size: 0.52rem; padding: 13px 18px; }
+      #mascot { width: 110px; right: 10px; bottom: 200px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background layers -->
+  <div id="bg-base"></div>
+  <div id="bg-layer"></div>
+  <div id="overlay"></div>
+  <div id="scanlines"></div>
+
+  <!-- Mascot character -->
+  <img id="mascot" src="/apps/ninja1.png" alt="">
+
+  <!-- STRIPE MODAL -->
+  <div id="stripe-modal">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeModal()">✕ CLOSE</button>
+      <h2>🔓 UNLOCK THEME BUNDLE</h2>
+      <div class="modal-price">$5</div>
+      <p class="modal-once">Pay once. Own forever.</p>
+      <ul class="modal-includes">
+        <li>Jurassic Jungle theme</li>
+        <li>Candy Land theme</li>
+        <li>Stealth Santa theme</li>
+        <li>All future themes free</li>
+      </ul>
+      <div id="payment-element"></div>
+      <button id="submit-pay" onclick="submitPayment()">🔒 PAY $5 — UNLOCK THEMES</button>
+      <div id="pay-msg"></div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="hero">
+      <img src="/apps/banner.png" alt="Stealth Classroom" class="hero-banner" id="hero-banner">
+      <p class="tagline">Turn <span class="gold">silence</span> into a superpower</p>
+      <p class="sub">The gamified noise monitor students actually want to beat.</p>
+      <div class="btn-row">
+        <a href="/apps/" class="btn">▶ LAUNCH APP</a>
+        <button class="btn btn-outline" disabled style="opacity:0.5; cursor:default;">🔒 THEMES — COMING SOON</button>
+      </div>
+    </div>
+
+    <div class="themes-section">
+      <p class="themes-label">// TAP A THEME TO PREVIEW //</p>
+      <div class="themes-row">
+
+        <div class="theme-thumb free active" onclick="previewTheme('ninja')">
+          <span class="theme-badge">FREE</span>
+          <img src="/apps/banner.png" alt="Ninja Dojo">
+          <h3>NINJA DOJO</h3>
+        </div>
+
+        <div class="theme-thumb locked" onclick="previewTheme('jungle')">
+          <span class="theme-badge">COMING SOON</span>
+          <img src="/apps/dinobanner.png" alt="Jurassic Jungle">
+          <h3>JURASSIC JUNGLE</h3>
+          <span class="lock-icon">🔒</span>
+        </div>
+
+        <div class="theme-thumb locked" onclick="previewTheme('candy')">
+          <span class="theme-badge">COMING SOON</span>
+          <img src="/apps/candybanner.png" alt="Candy Land">
+          <h3>CANDY LAND</h3>
+          <span class="lock-icon">🔒</span>
+        </div>
+
+        <div class="theme-thumb locked" onclick="previewTheme('santa')">
+          <span class="theme-badge">COMING SOON</span>
+          <img src="/apps/santabanner.png" alt="Stealth Santa">
+          <h3>STEALTH SANTA</h3>
+          <span class="lock-icon">🔒</span>
+        </div>
+
+      </div>
+      <p class="footer-note">© 2025 Stealth Classroom · Made for teachers ❤️ · Pioneer 10</p>
+    </div>
+  </div>
+
+  <script src="https://js.stripe.com/v3/"></script>
+  <script>
+    const STRIPE_KEY  = 'pk_live_51T5fGzFL7tsvyN9BhX3Tw2OPhJr0s6ibIG0JuKEONhxF9EFiV3WbUCBCIAIA5l2jbbXaQpcNyfJYEzhggdJsobWt00bgV6CU0z';
+    const WORKER_URL  = 'https://stealth-classroom-api.dibbleandseed.workers.dev';
+
+    const themes = {
+      ninja:  { bg: '/apps/background.png',        mascot: '/apps/ninja1.png',  banner: '/apps/banner.png' },
+      jungle: { bg: '/apps/jungle1.png',            mascot: '/apps/dino1.png',   banner: '/apps/dinobanner.png' },
+      candy:  { bg: '/apps/candy1.png',             mascot: '/apps/bear1.png',   banner: '/apps/candybanner.png' },
+      santa:  { bg: '/apps/santabackground1.png',   mascot: '/apps/santa1.png',  banner: '/apps/santabanner.png' },
+    };
+
+    let currentTheme = 'ninja';
+    let bgTransitioning = false;
+
+    function previewTheme(name) {
+      if (name === currentTheme) return;
+      currentTheme = name;
+
+      // Highlight active card
+      document.querySelectorAll('.theme-thumb').forEach(el => el.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+
+      const t = themes[name];
+
+      // Crossfade background
+      const layer = document.getElementById('bg-layer');
+      layer.style.backgroundImage = `url('${t.bg}')`;
+      layer.style.opacity = '0';
+      // Force reflow then fade in
+      layer.offsetHeight;
+      layer.style.transition = 'opacity 0.6s ease';
+      layer.style.opacity = '1';
+
+      // After fade completes swap base and reset layer
+      setTimeout(() => {
+        document.getElementById('bg-base').style.backgroundImage = `url('${t.bg}')`;
+        layer.style.transition = 'none';
+        layer.style.opacity = '0';
+      }, 650);
+
+      // Swap hero banner
+      const heroBanner = document.getElementById('hero-banner');
+      heroBanner.style.opacity = '0';
+      setTimeout(() => {
+        heroBanner.src = t.banner;
+        heroBanner.style.opacity = '1';
+      }, 300);
+
+      // Show mascot
+      const mascot = document.getElementById('mascot');
+      mascot.classList.remove('visible');
+      mascot.style.opacity = '0';
+      setTimeout(() => {
+        mascot.src = t.mascot;
+        mascot.classList.add('visible');
+      }, 200);
+    }
+
+    // ── STRIPE ──────────────────────────────────────────
+    let stripe, elements;
+
+    async function openModal() {
+      document.getElementById('stripe-modal').classList.add('open');
+      document.getElementById('pay-msg').textContent = '';
+      document.getElementById('submit-pay').style.display = 'none';
+
+      if (elements) {
+        document.getElementById('submit-pay').style.display = 'block';
+        return;
+      }
+
+      setPayMsg('LOADING CHECKOUT...', 'ok');
+
+      try {
+        const res  = await fetch(`${WORKER_URL}/create-checkout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: '' }),
+        });
+        const data = await res.json();
+        if (data.error) { setPayMsg('Error: ' + data.error, 'err'); return; }
+
+        stripe   = Stripe(STRIPE_KEY);
+        elements = stripe.elements({ clientSecret: data.clientSecret, appearance: stripeTheme() });
+        elements.create('payment').mount('#payment-element');
+        setPayMsg('', '');
+        document.getElementById('submit-pay').style.display = 'block';
+
+      } catch (e) {
+        setPayMsg('Connection error: ' + e.message, 'err');
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('stripe-modal').classList.remove('open');
+    }
+
+    async function submitPayment() {
+      const btn = document.getElementById('submit-pay');
+      btn.disabled = true; btn.textContent = 'PROCESSING...';
+      setPayMsg('', '');
+
+      const { error } = await stripe.confirmPayment({
+        elements,
+        confirmParams: { return_url: `https://stealthclassroom.com/success` },
+      });
+
+      if (error) {
+        setPayMsg(error.message, 'err');
+        btn.disabled = false;
+        btn.textContent = '🔒 PAY $5 — UNLOCK THEMES';
+      }
+    }
+
+    function setPayMsg(msg, type) {
+      const el = document.getElementById('pay-msg');
+      el.textContent = msg;
+      el.className = type === 'err' ? 'pay-err' : 'pay-ok';
+    }
+
+    function stripeTheme() {
+      return {
+        theme: 'night',
+        variables: { colorPrimary: '#ffd700', colorBackground: '#0a0c20', colorText: '#f0f0f0', colorDanger: '#ff4444', fontFamily: '"Press Start 2P", monospace', spacingUnit: '4px', borderRadius: '0px' },
+        rules: {
+          '.Input': { border: '2px solid #ffd700', padding: '12px' },
+          '.Input:focus': { border: '2px solid #00e5ff' },
+          '.Label': { fontSize: '10px', letterSpacing: '1px' },
+        }
+      };
+    }
+
+    // Preload all theme images silently
+    Object.values(themes).forEach(t => {
+      [t.bg, t.mascot, t.banner].forEach(src => { const i = new Image(); i.src = src; });
+    });
+  </script>
+</body>
+</html>
