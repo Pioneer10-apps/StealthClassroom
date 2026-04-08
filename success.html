@@ -229,7 +229,7 @@
       </ol>
     </div>
 
-    <a href="/app" class="launch-btn">▶ LAUNCH APP NOW</a>
+    <a href="/apps/index.html" class="launch-btn">▶ LAUNCH APP NOW</a>
   </div>
 
   <script>
@@ -245,7 +245,6 @@
         return;
       }
 
-      // Retry up to 6 times (webhook may take a moment)
       for (let i = 0; i < 6; i++) {
         try {
           const res = await fetch(`${WORKER_URL}/get-code?session_id=${sessionId}`);
@@ -259,7 +258,7 @@
           }
         } catch (e) {}
 
-        if (i < 5) await sleep(2000); // wait 2s between retries
+        if (i < 5) await new Promise(r => setTimeout(r, 2000));
       }
 
       document.getElementById('unlock-code').innerHTML = '<span class="error-text">Check your email — code was sent there.</span>';
@@ -273,8 +272,6 @@
         setTimeout(() => { btn.textContent = '📋 COPY CODE'; }, 2000);
       });
     }
-
-    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
     fetchCode();
   </script>

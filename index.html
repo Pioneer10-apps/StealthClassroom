@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Stealth Classroom</title>
   <meta name="theme-color" content="#1a1a2e">
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <link rel="manifest" href="/site.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <link rel="manifest" href="./site.webmanifest">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -39,7 +39,7 @@
       position: fixed; inset: 0; z-index: 0;
       background-size: cover; background-position: center;
       background-repeat: no-repeat;
-      background-image: url('/apps/background.png');
+      background-image: url('./apps/background.png');
     }
 
     /* Dark overlay */
@@ -227,7 +227,7 @@
   <div id="scanlines"></div>
 
   <!-- Mascot character -->
-  <img id="mascot" src="/apps/ninja1.png" alt="">
+  <img id="mascot" src="./apps/ninja1.png" alt="">
 
   <!-- STRIPE MODAL -->
   <div id="stripe-modal">
@@ -250,11 +250,11 @@
 
   <div class="content">
     <div class="hero">
-      <img src="/apps/banner.png" alt="Stealth Classroom" class="hero-banner" id="hero-banner">
+      <img src="./apps/banner.png" alt="Stealth Classroom" class="hero-banner" id="hero-banner">
       <p class="tagline">Turn <span class="gold">silence</span> into a superpower</p>
       <p class="sub">The gamified noise monitor students actually want to beat.</p>
       <div class="btn-row">
-        <a href="/apps/" class="btn">▶ LAUNCH APP</a>
+        <a href="./apps/index.html" class="btn">▶ LAUNCH APP</a>
         <button class="btn btn-outline" disabled style="opacity:0.5; cursor:default;">🔒 THEMES — COMING SOON</button>
       </div>
     </div>
@@ -265,27 +265,27 @@
 
         <div class="theme-thumb free active" onclick="previewTheme('ninja')">
           <span class="theme-badge">FREE</span>
-          <img src="/apps/banner.png" alt="Ninja Dojo">
+          <img src="./apps/banner.png" alt="Ninja Dojo">
           <h3>NINJA DOJO</h3>
         </div>
 
         <div class="theme-thumb locked" onclick="previewTheme('jungle')">
           <span class="theme-badge">COMING SOON</span>
-          <img src="/apps/dinobanner.png" alt="Jurassic Jungle">
+          <img src="./apps/dinobanner.png" alt="Jurassic Jungle">
           <h3>JURASSIC JUNGLE</h3>
           <span class="lock-icon">🔒</span>
         </div>
 
         <div class="theme-thumb locked" onclick="previewTheme('candy')">
           <span class="theme-badge">COMING SOON</span>
-          <img src="/apps/candybanner.png" alt="Candy Land">
+          <img src="./apps/candybanner.png" alt="Candy Land">
           <h3>CANDY LAND</h3>
           <span class="lock-icon">🔒</span>
         </div>
 
         <div class="theme-thumb locked" onclick="previewTheme('santa')">
           <span class="theme-badge">COMING SOON</span>
-          <img src="/apps/santabanner.png" alt="Stealth Santa">
+          <img src="./apps/santabanner.png" alt="Stealth Santa">
           <h3>STEALTH SANTA</h3>
           <span class="lock-icon">🔒</span>
         </div>
@@ -301,10 +301,10 @@
     const WORKER_URL  = 'https://stealth-classroom-api.dibbleandseed.workers.dev';
 
     const themes = {
-      ninja:  { bg: '/apps/background.png',        mascot: '/apps/ninja1.png',  banner: '/apps/banner.png' },
-      jungle: { bg: '/apps/jungle1.png',            mascot: '/apps/dino1.png',   banner: '/apps/dinobanner.png' },
-      candy:  { bg: '/apps/candy1.png',             mascot: '/apps/bear1.png',   banner: '/apps/candybanner.png' },
-      santa:  { bg: '/apps/santabackground1.png',   mascot: '/apps/santa1.png',  banner: '/apps/santabanner.png' },
+      ninja:  { bg: './apps/background.png',        mascot: './apps/ninja1.png',  banner: './apps/banner.png' },
+      jungle: { bg: './apps/jungle1.png',            mascot: './apps/dino1.png',   banner: './apps/dinobanner.png' },
+      candy:  { bg: './apps/candy1.png',             mascot: './apps/bear1.png',   banner: './apps/candybanner.png' },
+      santa:  { bg: './apps/santabackground1.png',   mascot: './apps/santa1.png',  banner: './apps/santabanner.png' },
     };
 
     let currentTheme = 'ninja';
