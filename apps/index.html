@@ -443,11 +443,9 @@
             <div style="font-size:2.5rem; color:var(--gold); text-shadow:3px 3px #000; margin:10px 0 5px;">$5</div>
             <p style="font-family:'VT323',monospace; font-size:1.2rem; color:#aaa; margin-bottom:20px;">Pay once. Own forever. All future themes free.</p>
 
-            <input type="text" id="unlock-code-input" class="input-box" placeholder="HAVE A CODE? ENTER IT HERE" style="width:100%; margin-bottom:10px; font-size:0.5rem;">
+            <input type="text" id="unlock-code-input" class="input-box" placeholder="HAVE A CODE? ENTER IT HERE" style="width:100%; margin-bottom:10px; font-size:0.5rem;" onkeydown="if(event.key==='Enter'){event.preventDefault();submitUnlockCode();}">
             <button onclick="submitUnlockCode()" style="width:100%; margin-bottom:10px; background:var(--green); border-color:#000; color:#000; font-size:0.6rem;">✅ UNLOCK WITH CODE</button>
-            <a href="https://stealthclassroom.com" target="_blank" style="display:block; width:100%; box-sizing:border-box;">
-                <button style="width:100%; background:var(--gold); border-color:#000; color:#000; font-size:0.6rem; margin-bottom:10px;">🛒 BUY FOR $5 — GET YOUR CODE</button>
-            </a>
+            <button onclick="window.open('https://buy.stripe.com/bJe4gzbbc3YEeKrd7s3F600', '_blank')" style="width:100%; background:var(--gold); border-color:#000; color:#000; font-size:0.6rem; margin-bottom:10px;">🛒 BUY FOR $5 — GET YOUR CODE</button>
             <button onclick="closePaywall()" style="font-size:0.5rem; padding:10px 20px; background:transparent; border-color:#555; color:#aaa;">CLOSE</button>
 
             <div id="unlock-banner" style="display:none; background:var(--green); color:#000; padding:10px; font-size:0.5rem; margin-top:15px;">🎉 THEMES UNLOCKED! ENJOY ALL PACKS!</div>
@@ -1563,7 +1561,7 @@
                 return;
             }
 
-            try {
+                try {
                 const res = await fetch(`${WORKER_URL}/verify-code`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1574,7 +1572,6 @@
                 if (data.valid) {
                     localStorage.setItem(UNLOCK_KEY, 'true');
                     bannerEl.style.display = 'block';
-                    // Update selector to remove lock icons
                     updateThemeSelector();
                     clearInterval(previewInterval);
                     setTimeout(() => closePaywall(), 2000);
