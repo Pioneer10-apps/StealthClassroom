@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Field Notes — Stealth Classroom Blog</title>
+  <meta name="description" content="Real classroom strategies, noise management tips, and teacher intel from the Stealth Classroom team.">
+  <meta name="theme-color" content="#1a1a2e">
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: 'Press Start 2P', monospace; overflow-x: hidden; }
+
+    body {
+      background-color: #0d0f1e;
+      background-image: url('./apps/background.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      color: #f0f0f0;
+      min-height: 100vh;
+    }
+
+    #overlay {
+      position: fixed; inset: 0; z-index: 1;
+      background: rgba(0,0,0,0.72);
+      pointer-events: none;
+    }
+    #scanlines {
+      position: fixed; inset: 0; z-index: 2;
+      background: repeating-linear-gradient(0deg,
+        transparent, transparent 2px,
+        rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px);
+      pointer-events: none;
+    }
+
+    .page-wrap {
+      position: relative; z-index: 3;
+      max-width: 780px; margin: 0 auto;
+      padding: 0 20px 60px;
+    }
+
+    /* ── NAV ── */
+    .site-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 22px 0 18px;
+      border-bottom: 3px solid rgba(255,215,0,0.25);
+      flex-wrap: wrap; gap: 12px;
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none;
+    }
+    .nav-logo img {
+      height: 36px; image-rendering: pixelated;
+      filter: drop-shadow(0 0 8px rgba(255,215,0,0.4));
+    }
+    .nav-links { display: flex; gap: 6px; flex-wrap: wrap; }
+    .nav-link {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.42rem; color: #aaa;
+      text-decoration: none; padding: 8px 12px;
+      border: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .nav-link:hover { color: #ffd700; border-color: rgba(255,215,0,0.4); }
+    .nav-link.active { color: #ffd700; border-color: #ffd700; }
+    .nav-cta {
+      background: #ffd700; color: #000;
+      border: 3px solid #000 !important;
+      box-shadow: 3px 3px 0 #000;
+    }
+    .nav-cta:hover { transform: translate(-2px,-2px); box-shadow: 5px 5px 0 #000; background: #ffe033; color: #000 !important; border-color: #000 !important; }
+
+    /* ── HEADER ── */
+    .blog-header {
+      text-align: center;
+      padding: 50px 0 40px;
+      border-bottom: 3px solid rgba(255,215,0,0.2);
+      margin-bottom: 48px;
+    }
+    .blog-header .eyebrow {
+      font-size: 0.42rem; color: #ffd700;
+      letter-spacing: 4px; margin-bottom: 18px;
+      text-shadow: 2px 2px #000;
+    }
+    .blog-header h1 {
+      font-size: 1.3rem; color: #ffd700;
+      text-shadow: 4px 4px #000;
+      line-height: 1.6; margin-bottom: 14px;
+    }
+    .blog-header p {
+      font-family: 'VT323', monospace;
+      font-size: 1.4rem; color: #aaa;
+      max-width: 480px; margin: 0 auto;
+      line-height: 1.5;
+    }
+
+    /* ── POST CARD ── */
+    .post-card {
+      background: rgba(10,12,32,0.85);
+      border: 3px solid rgba(255,215,0,0.3);
+      box-shadow: 6px 6px 0 rgba(0,0,0,0.6);
+      margin-bottom: 40px;
+      transition: transform 0.15s, border-color 0.2s, box-shadow 0.2s;
+    }
+    .post-card:hover {
+      transform: translate(-3px,-3px);
+      border-color: #ffd700;
+      box-shadow: 9px 9px 0 rgba(0,0,0,0.6);
+    }
+    .post-card.featured {
+      border-color: #ffd700;
+      border-width: 3px;
+    }
+    .post-tag-bar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 22px 0;
+    }
+    .post-tag {
+      font-size: 0.35rem; padding: 4px 10px;
+      border: 2px solid #000;
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+    .tag-strategy  { background: #4cff91; color: #000; }
+    .tag-tips      { background: #00e5ff; color: #000; }
+    .tag-research  { background: #ff9800; color: #000; }
+    .tag-featured  { background: #ffd700; color: #000; }
+    .tag-update    { background: #ff4caa; color: #000; }
+
+    .post-date {
+      font-family: 'VT323', monospace;
+      font-size: 1rem; color: #555;
+      margin-left: auto;
+    }
+    .post-body { padding: 18px 22px 26px; }
+    .post-body h2 {
+      font-size: 0.62rem; color: #f0f0f0;
+      line-height: 1.8; margin-bottom: 14px;
+      text-shadow: 2px 2px #000;
+    }
+    .post-body h2 a {
+      color: inherit; text-decoration: none;
+    }
+    .post-body h2 a:hover { color: #ffd700; }
+    .post-body p {
+      font-family: 'VT323', monospace;
+      font-size: 1.25rem; color: #ccc;
+      line-height: 1.6; margin-bottom: 16px;
+    }
+    .post-body p strong {
+      color: #ffd700; font-family: 'VT323', monospace;
+    }
+    .post-body ul {
+      list-style: none; margin: 0 0 16px 0; padding: 0;
+    }
+    .post-body ul li {
+      font-family: 'VT323', monospace;
+      font-size: 1.2rem; color: #ccc;
+      padding: 5px 0 5px 22px;
+      position: relative; line-height: 1.5;
+    }
+    .post-body ul li::before {
+      content: '▶'; color: #ffd700;
+      font-size: 0.5rem; position: absolute;
+      left: 0; top: 8px;
+    }
+    .post-divider {
+      border: none;
+      border-top: 2px solid rgba(255,215,0,0.15);
+      margin: 18px 0 14px;
+    }
+    .post-footer {
+      display: flex; align-items: center;
+      justify-content: space-between; flex-wrap: wrap; gap: 8px;
+    }
+    .post-author {
+      font-family: 'VT323', monospace;
+      font-size: 1rem; color: #555;
+    }
+    .post-author span { color: #888; }
+    .read-more {
+      font-size: 0.38rem; color: #ffd700;
+      text-decoration: none; border: 2px solid #ffd700;
+      padding: 7px 14px; box-shadow: 3px 3px 0 #000;
+      transition: all 0.1s; white-space: nowrap;
+    }
+    .read-more:hover {
+      background: #ffd700; color: #000;
+      transform: translate(-2px,-2px); box-shadow: 5px 5px 0 #000;
+    }
+
+    /* ── FULL POST (article view) ── */
+    .full-post { display: none; }
+    .full-post.open { display: block; }
+    .post-list.hidden { display: none; }
+
+    .article-wrap {
+      background: rgba(10,12,32,0.9);
+      border: 3px solid rgba(255,215,0,0.3);
+      box-shadow: 6px 6px 0 rgba(0,0,0,0.6);
+      padding: 30px 30px 40px;
+      margin-bottom: 40px;
+    }
+    .article-back {
+      font-size: 0.4rem; color: #aaa;
+      cursor: pointer; border: 2px solid #555;
+      background: none; padding: 9px 16px;
+      font-family: 'Press Start 2P', monospace;
+      box-shadow: 3px 3px 0 #000;
+      transition: all 0.1s; margin-bottom: 28px;
+      display: inline-block;
+    }
+    .article-back:hover { color: #ffd700; border-color: #ffd700; }
+    .article-wrap h1 {
+      font-size: 0.75rem; color: #ffd700;
+      line-height: 1.8; margin-bottom: 10px;
+      text-shadow: 3px 3px #000;
+    }
+    .article-meta {
+      font-family: 'VT323', monospace;
+      font-size: 1.1rem; color: #555;
+      margin-bottom: 26px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid rgba(255,215,0,0.15);
+    }
+    .article-wrap p {
+      font-family: 'VT323', monospace;
+      font-size: 1.3rem; color: #ccc;
+      line-height: 1.7; margin-bottom: 20px;
+    }
+    .article-wrap h2 {
+      font-size: 0.5rem; color: #ffd700;
+      margin: 30px 0 14px;
+      text-shadow: 2px 2px #000;
+      line-height: 1.8;
+    }
+    .article-wrap ul {
+      list-style: none; margin: 0 0 20px 0;
+    }
+    .article-wrap ul li {
+      font-family: 'VT323', monospace;
+      font-size: 1.25rem; color: #ccc;
+      padding: 6px 0 6px 22px;
+      position: relative; line-height: 1.5;
+    }
+    .article-wrap ul li::before {
+      content: '▶'; color: #ffd700;
+      font-size: 0.5rem; position: absolute;
+      left: 0; top: 9px;
+    }
+    .article-wrap strong { color: #ffd700; font-family: 'VT323', monospace; }
+    .article-callout {
+      border: 3px solid #ffd700;
+      background: rgba(255,215,0,0.06);
+      padding: 18px 20px; margin: 24px 0;
+    }
+    .article-callout p { margin: 0; color: #f0f0f0; }
+
+    /* ── SIDEBAR STRIP ── */
+    .about-strip {
+      background: rgba(10,12,32,0.85);
+      border: 3px solid rgba(255,215,0,0.3);
+      padding: 22px; margin-bottom: 40px;
+      text-align: center;
+    }
+    .about-strip h3 {
+      font-size: 0.45rem; color: #ffd700;
+      margin-bottom: 12px; text-shadow: 2px 2px #000;
+    }
+    .about-strip p {
+      font-family: 'VT323', monospace;
+      font-size: 1.2rem; color: #aaa;
+      line-height: 1.5; margin-bottom: 16px;
+    }
+    .about-strip a {
+      display: inline-block;
+      background: #ffd700; color: #000;
+      border: 3px solid #000; box-shadow: 4px 4px 0 #000;
+      font-size: 0.42rem; padding: 12px 20px;
+      text-decoration: none; transition: all 0.1s;
+    }
+    .about-strip a:hover {
+      transform: translate(-2px,-2px); box-shadow: 6px 6px 0 #000;
+    }
+
+    /* ── FOOTER ── */
+    .blog-footer {
+      text-align: center;
+      padding-top: 30px;
+      border-top: 3px solid rgba(255,215,0,0.15);
+    }
+    .blog-footer p {
+      font-family: 'VT323', monospace;
+      font-size: 1rem; color: #444;
+    }
+
+    @media (max-width: 520px) {
+      .blog-header h1 { font-size: 0.85rem; }
+      .post-body h2 { font-size: 0.5rem; }
+      .article-wrap h1 { font-size: 0.6rem; }
+      .site-nav { padding: 16px 0 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="overlay"></div>
+  <div id="scanlines"></div>
+
+  <div class="page-wrap">
+
+    <!-- NAV -->
+    <nav class="site-nav">
+      <a href="./index.html" class="nav-logo">
+        <img src="./apps/banner.png" alt="Stealth Classroom">
+      </a>
+      <div class="nav-links">
+        <a href="./index.html" class="nav-link">HOME</a>
+        <a href="./apps/index.html" class="nav-link">LAUNCH APP</a>
+        <a href="./blog.html" class="nav-link active">FIELD NOTES</a>
+        <a href="./index.html" class="nav-link nav-cta" onclick="event.preventDefault(); window.location='./index.html#themes'">🔒 GET THEMES</a>
+      </div>
+    </nav>
+
+    <!-- BLOG HEADER -->
+    <header class="blog-header">
+      <p class="eyebrow">// TEACHER INTEL //</p>
+      <h1>FIELD NOTES</h1>
+      <p>Real strategies from real classrooms. No fluff, no filler — just what works.</p>
+    </header>
+
+    <!-- POST LIST -->
+    <div class="post-list" id="post-list">
+
+      <!-- ══ POST 1 — FEATURED ══ -->
+      <div class="post-card featured">
+        <div class="post-tag-bar">
+          <span class="post-tag tag-featured">⭐ FEATURED</span>
+          <span class="post-tag tag-strategy">STRATEGY</span>
+          <span class="post-date">MAY 2025</span>
+        </div>
+        <div class="post-body">
+          <h2><a href="#" onclick="showPost('post1'); return false;">Why Your Class Goes Loud the Moment You Turn Your Back (And How to Fix It)</a></h2>
+          <p>It happens to every teacher. You spin around to write on the board, or crouch down to help one student — and the noise creeps up instantly. By the time you turn back, it's already out of hand.</p>
+          <p>This isn't a discipline problem. It's a <strong>feedback problem</strong>. Students have no signal telling them they've crossed a line until you do. Here's how Stealth Classroom changes that dynamic permanently...</p>
+          <hr class="post-divider">
+          <div class="post-footer">
+            <span class="post-author">BY <span>STEALTH HQ</span></span>
+            <a href="#" class="read-more" onclick="showPost('post1'); return false;">READ FULL INTEL ▶</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ POST 2 ══ -->
+      <div class="post-card">
+        <div class="post-tag-bar">
+          <span class="post-tag tag-tips">QUICK TIPS</span>
+          <span class="post-date">APR 2025</span>
+        </div>
+        <div class="post-body">
+          <h2><a href="#" onclick="showPost('post2'); return false;">5 Ways to Set Up Stealth Classroom So Students Actually Care About the Score</a></h2>
+          <p>The tool only works if students are invested. These five setup tweaks take under two minutes each — and they turn passive observers into kids who are actively trying to protect the hearts.</p>
+          <hr class="post-divider">
+          <div class="post-footer">
+            <span class="post-author">BY <span>STEALTH HQ</span></span>
+            <a href="#" class="read-more" onclick="showPost('post2'); return false;">READ FULL INTEL ▶</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ POST 3 ══ -->
+      <div class="post-card">
+        <div class="post-tag-bar">
+          <span class="post-tag tag-research">RESEARCH</span>
+          <span class="post-date">MAR 2025</span>
+        </div>
+        <div class="post-body">
+          <h2><a href="#" onclick="showPost('post3'); return false;">The Science Behind Why Gamification Actually Works for Classroom Noise</a></h2>
+          <p>It's not just fun — there's a real reason why students respond to XP bars and hearts in a way they don't respond to "shh." Here's the short version of what the research says.</p>
+          <hr class="post-divider">
+          <div class="post-footer">
+            <span class="post-author">BY <span>STEALTH HQ</span></span>
+            <a href="#" class="read-more" onclick="showPost('post3'); return false;">READ FULL INTEL ▶</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <!-- END POST LIST -->
+
+
+    <!-- ══ FULL POST 1 ══ -->
+    <div class="full-post" id="post1">
+      <div class="article-wrap">
+        <button class="article-back" onclick="showList()">◀ BACK TO FIELD NOTES</button>
+
+        <div class="post-tag-bar" style="padding:0 0 16px 0;">
+          <span class="post-tag tag-featured">⭐ FEATURED</span>
+          <span class="post-tag tag-strategy">STRATEGY</span>
+          <span class="post-date">MAY 2025</span>
+        </div>
+
+        <h1>Why Your Class Goes Loud the Moment You Turn Your Back (And How to Fix It)</h1>
+        <p class="article-meta">BY STEALTH HQ · 4 MIN READ</p>
+
+        <p>It happens to every teacher. You spin around to write on the board, crouch down to help one student, or glance at your laptop — and the noise creeps up instantly. By the time you turn back, the chatter is already rolling.</p>
+
+        <p>This isn't a discipline problem. It's a <strong>feedback problem</strong>.</p>
+
+        <p>Students don't have a signal telling them they're getting louder until you react. And by the time you react, the moment has already gone. You're managing noise after the fact, every single time.</p>
+
+        <h2>THE FEEDBACK LOOP THAT KEEPS CLASSROOMS QUIET</h2>
+
+        <p>Think about how a speed camera works. Drivers don't need a police officer standing there watching. The camera is always on, and drivers know it. That visibility changes behaviour on its own — not because anyone's being punished, but because the feedback is <strong>immediate and constant</strong>.</p>
+
+        <p>Classrooms work the same way. Students will self-regulate when they have a live signal showing them where they're at. Without one, they have no idea they've drifted — and by the time you've turned around and said something, three or four other students have joined in.</p>
+
+        <div class="article-callout">
+          <p>💡 <strong>The key insight:</strong> You don't need to be the noise monitor. You need something that does it when you're not watching — so you can focus on actually teaching.</p>
+        </div>
+
+        <h2>WHAT CHANGES WHEN YOU USE STEALTH CLASSROOM</h2>
+
+        <p>When the app is running on a screen students can see, a few things happen almost immediately:</p>
+
+        <ul>
+          <li>Students start monitoring themselves instead of waiting to be corrected</li>
+          <li>Transitions get faster because the class knows the timer is running</li>
+          <li>The kids who were getting loud start getting quiet again — because their peers are watching the bar, not just you</li>
+          <li>You stop burning energy on constant reminders and can put it into the lesson</li>
+        </ul>
+
+        <p>The gamification isn't a gimmick. Hearts and XP give students something concrete to protect. A class that's collectively trying to keep their hearts full is a class that has taken ownership of the noise — you didn't take it from them.</p>
+
+        <h2>HOW TO SET IT UP FOR MAXIMUM IMPACT</h2>
+
+        <p>A few things that make a real difference on day one:</p>
+
+        <ul>
+          <li><strong>Put the screen where students can see it</strong> — a projector or TV works best. If they can't see the bar, the effect is halved.</li>
+          <li><strong>Do a short demo first.</strong> Make some noise, let them watch a heart go. Then get quiet. Show them it works both ways.</li>
+          <li><strong>Don't narrate it constantly.</strong> The tool works best when you say nothing and just let it run. The silence it creates feels like the class's achievement, not yours.</li>
+          <li><strong>Use the XP milestone</strong> as a natural reward moment — when the class ranks up, acknowledge it briefly and move on. That two-second beat is worth more than five minutes of praise.</li>
+        </ul>
+
+        <h2>THE BOTTOM LINE</h2>
+
+        <p>You can't watch the class every second. But a noise monitor can. The moment you stop being the sole feedback mechanism in the room, everything shifts — and so does your stress level.</p>
+
+        <p>Try it for one week. Run it during independent work or transitions. See what happens when students are watching the bar instead of watching to see if you're watching them.</p>
+
+        <hr class="post-divider">
+        <div class="post-footer">
+          <span class="post-author">STEALTH HQ · MAY 2025</span>
+          <a href="./apps/index.html" class="read-more">LAUNCH THE APP ▶</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ FULL POST 2 ══ -->
+    <div class="full-post" id="post2">
+      <div class="article-wrap">
+        <button class="article-back" onclick="showList()">◀ BACK TO FIELD NOTES</button>
+
+        <div class="post-tag-bar" style="padding:0 0 16px 0;">
+          <span class="post-tag tag-tips">QUICK TIPS</span>
+          <span class="post-date">APR 2025</span>
+        </div>
+
+        <h1>5 Ways to Set Up Stealth Classroom So Students Actually Care About the Score</h1>
+        <p class="article-meta">BY STEALTH HQ · 3 MIN READ</p>
+
+        <p>The tool works. But it works best when students are invested — when they feel like the hearts and XP belong to them, not to you. These five tweaks take almost no time and make a noticeable difference.</p>
+
+        <h2>1. LET THEM NAME THE MISSION</h2>
+        <p>Before you start, ask the class to agree on what they're working on — "silent reading," "exam prep," "focus block." This tiny act of ownership makes the session feel like their mission, not your rule. They'll protect it.</p>
+
+        <h2>2. PUT THE SCREEN AT THE FRONT AND SAY NOTHING</h2>
+        <p>Don't over-explain. Just open it, put it on the projector, and start. Let them figure it out. The first time the bar goes red and they scramble to get quiet again, they've learned everything they need to know.</p>
+
+        <h2>3. CELEBRATE RANK-UPS BRIEFLY AND MOVE ON</h2>
+        <p>When the class hits a new rank — Blue Belt, Hunter, whatever the theme gives them — just say the name out loud and keep going. Don't make it a big production. That understatement makes it feel earned, not manufactured.</p>
+
+        <h2>4. USE IT DURING THE SESSIONS THAT USUALLY FALL APART</h2>
+        <p>Independent work, early finishers, transitions between activities. These are the moments that cost you the most energy. Run the app during exactly these windows. Save it for the hard moments so it stays meaningful.</p>
+
+        <h2>5. LET THE CLASS "PROTECT" THE HEARTS</h2>
+        <p>If a heart is about to go, say nothing. Just glance at the screen. Let students who notice start quietly shushing each other. That peer accountability is the whole point — and it takes about three sessions to kick in naturally.</p>
+
+        <hr class="post-divider">
+        <div class="post-footer">
+          <span class="post-author">STEALTH HQ · APR 2025</span>
+          <a href="./apps/index.html" class="read-more">LAUNCH THE APP ▶</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ FULL POST 3 ══ -->
+    <div class="full-post" id="post3">
+      <div class="article-wrap">
+        <button class="article-back" onclick="showList()">◀ BACK TO FIELD NOTES</button>
+
+        <div class="post-tag-bar" style="padding:0 0 16px 0;">
+          <span class="post-tag tag-research">RESEARCH</span>
+          <span class="post-date">MAR 2025</span>
+        </div>
+
+        <h1>The Science Behind Why Gamification Actually Works for Classroom Noise</h1>
+        <p class="article-meta">BY STEALTH HQ · 3 MIN READ</p>
+
+        <p>There's a lot of cynicism about gamification in education. Points and badges feel gimmicky. And honestly, slapping a leaderboard on something boring doesn't make it interesting. But classroom noise is different — and there's a reason the approach works here when it fails elsewhere.</p>
+
+        <h2>THE PROBLEM WITH TRADITIONAL NOISE MANAGEMENT</h2>
+
+        <p>Most classroom noise strategies rely on <strong>delayed feedback</strong>. You wait until the noise is too loud, then react. Students don't have a way to know they're getting louder until you tell them. And the telling itself often creates more disruption than the noise did.</p>
+
+        <p>Research on behaviour change consistently shows that feedback needs to be <strong>immediate, visible, and tied to something students value</strong> to actually shift behaviour. A verbal reminder hits one of those three. A live noise meter with hearts at stake hits all three.</p>
+
+        <h2>WHY HEARTS WORK BETTER THAN POINTS</h2>
+
+        <p>Loss aversion is one of the most robust findings in behavioural psychology. People work harder to avoid losing something than to gain the same thing. Hearts do this naturally — students aren't trying to earn anything, they're trying to <strong>not lose what they have</strong>. That's a more powerful motivator than a reward system, particularly for collective behaviour.</p>
+
+        <div class="article-callout">
+          <p>📊 <strong>The pattern teachers report:</strong> Within a few sessions, students start self-correcting before a heart is lost — not because they've been told to, but because the feedback loop has become instinctive.</p>
+        </div>
+
+        <h2>THE COLLECTIVE ELEMENT</h2>
+
+        <p>Individual gamification in classrooms often backfires — ranking students against each other creates resentment. Stealth Classroom tracks the <strong>whole class</strong>. This flips the dynamic: instead of competition, you get collective accountability. The louder student becomes the one holding the class back from ranking up — a very different social pressure than a teacher's instruction.</p>
+
+        <h2>IT REMOVES THE TEACHER FROM THE MIDDLE</h2>
+
+        <p>This is probably the most underrated benefit. When a teacher is constantly managing noise, students are responding to the teacher — which means behaviour shifts whenever the teacher's attention shifts. When an impartial tool is managing noise, students are responding to something that doesn't blink, doesn't have favourites, and doesn't get frustrated. That consistency is what makes the calibration stick over time.</p>
+
+        <hr class="post-divider">
+        <div class="post-footer">
+          <span class="post-author">STEALTH HQ · MAR 2025</span>
+          <a href="./apps/index.html" class="read-more">LAUNCH THE APP ▶</a>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ABOUT STRIP -->
+    <div class="about-strip" id="about-strip">
+      <h3>🎮 WHAT IS STEALTH CLASSROOM?</h3>
+      <p>A gamified noise monitor built for real teachers. Students earn XP and rank up by keeping quiet. You get to teach. Everyone wins.</p>
+      <a href="./apps/index.html">▶ TRY IT FREE — NO SIGN UP</a>
+    </div>
+
+    <footer class="blog-footer">
+      <p>© 2025 Stealth Classroom · Made for teachers ❤️ · <a href="./index.html" style="color:#555; text-decoration:none;">Home</a></p>
+    </footer>
+
+  </div><!-- end page-wrap -->
+
+  <script>
+    function showPost(id) {
+      document.getElementById('post-list').classList.add('hidden');
+      document.getElementById('about-strip').style.display = 'none';
+      document.querySelectorAll('.full-post').forEach(el => el.classList.remove('open'));
+      document.getElementById(id).classList.add('open');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    function showList() {
+      document.querySelectorAll('.full-post').forEach(el => el.classList.remove('open'));
+      document.getElementById('post-list').classList.remove('hidden');
+      document.getElementById('about-strip').style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  </script>
+</body>
+</html>

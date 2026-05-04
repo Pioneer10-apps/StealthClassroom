@@ -235,7 +235,7 @@
       <button class="modal-close" onclick="closeModal()">✕ CLOSE</button>
       <h2>🔓 UNLOCK THEME BUNDLE</h2>
       <div class="modal-price">$5</div>
-      <p class="modal-once">Pay once. Own forever.</p>
+      <p class="modal-once">Pay once for all available themes.</p>
       <ul class="modal-includes">
         <li>Jurassic Jungle theme</li>
         <li>Candy Land theme</li>
@@ -255,7 +255,8 @@
       <p class="sub">The gamified noise monitor students actually want to beat.</p>
       <div class="btn-row">
         <a href="./apps/index.html" class="btn">▶ LAUNCH APP</a>
-        <button class="btn btn-outline" disabled style="opacity:0.5; cursor:default;">🔒 THEMES — COMING SOON</button>
+        <button class="btn btn-outline" onclick="openStripeModal()">🔒 THEMES — NOW AVAILABLE</button>
+        <a href="./blog.html" class="btn btn-outline">📋 FIELD NOTES</a>
       </div>
     </div>
 
@@ -269,22 +270,22 @@
           <h3>NINJA DOJO</h3>
         </div>
 
-        <div class="theme-thumb locked" onclick="previewTheme('jungle')">
-          <span class="theme-badge">COMING SOON</span>
+        <div class="theme-thumb locked" onclick="openStripeModal()">
+          <span class="theme-badge">NOW AVAILABLE</span>
           <img src="./apps/dinobanner.png" alt="Jurassic Jungle">
           <h3>JURASSIC JUNGLE</h3>
           <span class="lock-icon">🔒</span>
         </div>
 
-        <div class="theme-thumb locked" onclick="previewTheme('candy')">
-          <span class="theme-badge">COMING SOON</span>
+        <div class="theme-thumb locked" onclick="openStripeModal()">
+          <span class="theme-badge">NOW AVAILABLE</span>
           <img src="./apps/candybanner.png" alt="Candy Land">
           <h3>CANDY LAND</h3>
           <span class="lock-icon">🔒</span>
         </div>
 
-        <div class="theme-thumb locked" onclick="previewTheme('santa')">
-          <span class="theme-badge">COMING SOON</span>
+        <div class="theme-thumb locked" onclick="openStripeModal()">
+          <span class="theme-badge">NOW AVAILABLE</span>
           <img src="./apps/santabanner.png" alt="Stealth Santa">
           <h3>STEALTH SANTA</h3>
           <span class="lock-icon">🔒</span>
@@ -357,6 +358,7 @@
     // ── STRIPE ──────────────────────────────────────────
     let stripe, elements;
 
+    function openStripeModal() { openModal(); }
     async function openModal() {
       document.getElementById('stripe-modal').classList.add('open');
       document.getElementById('pay-msg').textContent = '';
