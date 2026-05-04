@@ -196,11 +196,10 @@
     .theme-thumb.active.locked { border-color: #ffd700; box-shadow: 0 0 16px rgba(255,215,0,0.5); }
 
     .theme-thumb img { width: 100%; max-width: 110px; height: auto; image-rendering: pixelated; display: block; margin: 0 auto 8px; filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.7)); }
-    .theme-thumb h3 { font-size: 0.37rem; color: #f0f0f0; line-height: 1.7; }
-
+    .theme-thumb h3 { font-size: 0.33rem; color: #f0f0f0; line-height: 1.7; word-break: break-word; }
     .theme-badge {
       position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
-      font-size: 0.34rem; padding: 3px 8px; border: 2px solid #000; white-space: nowrap;
+      font-size: 0.28rem; padding: 3px 6px; border: 2px solid #000; white-space: nowrap;
     }
     .theme-thumb.free   .theme-badge { background: #4cff91; color: #000; }
     .theme-thumb.locked .theme-badge { background: #ffd700; color: #000; }
@@ -270,21 +269,21 @@
           <h3>NINJA DOJO</h3>
         </div>
 
-        <div class="theme-thumb locked" onclick="openStripeModal()">
+        <div class="theme-thumb locked" onclick="openStripeModal('jungle')">
           <span class="theme-badge">NOW AVAILABLE</span>
           <img src="./apps/dinobanner.png" alt="Jurassic Jungle">
           <h3>JURASSIC JUNGLE</h3>
           <span class="lock-icon">🔒</span>
         </div>
 
-        <div class="theme-thumb locked" onclick="openStripeModal()">
+        <div class="theme-thumb locked" onclick="openStripeModal('candy')">
           <span class="theme-badge">NOW AVAILABLE</span>
           <img src="./apps/candybanner.png" alt="Candy Land">
           <h3>CANDY LAND</h3>
           <span class="lock-icon">🔒</span>
         </div>
 
-        <div class="theme-thumb locked" onclick="openStripeModal()">
+        <div class="theme-thumb locked" onclick="openStripeModal('santa')">
           <span class="theme-badge">NOW AVAILABLE</span>
           <img src="./apps/santabanner.png" alt="Stealth Santa">
           <h3>STEALTH SANTA</h3>
@@ -358,7 +357,11 @@
     // ── STRIPE ──────────────────────────────────────────
     let stripe, elements;
 
-    function openStripeModal() { openModal(); }
+    function openStripeModal(themeName) {
+      if (themeName) previewTheme(themeName);
+      openModal();
+    }
+
     async function openModal() {
       document.getElementById('stripe-modal').classList.add('open');
       document.getElementById('pay-msg').textContent = '';
