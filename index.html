@@ -153,7 +153,7 @@
     .modal-includes { text-align: left; margin-bottom: 24px; list-style: none; }
     .modal-includes li { font-family: 'VT323', monospace; font-size: 1.15rem; color: #f0f0f0; padding: 6px 0; border-bottom: 1px solid rgba(255,215,0,0.15); display: flex; gap: 10px; }
     .modal-includes li::before { content: '▶'; color: #ffd700; font-size: 0.5rem; padding-top: 2px; }
-    #payment-element { background: #0a0c20; border: 2px solid #ffd700; padding: 16px; margin-bottom: 16px; }
+    #payment-element { display: none; }
     #submit-pay {
       width: 100%; background: #4cff91; color: #000; border: 4px solid #000;
       font-family: 'Press Start 2P', monospace; font-size: 0.65rem;
@@ -242,8 +242,10 @@
         <li>All future themes free</li>
       </ul>
       <div id="payment-element"></div>
-      <button id="submit-pay" onclick="submitPayment()">🔒 PAY $5 — UNLOCK THEMES</button>
       <div id="pay-msg"></div>
+      <input id="unlock-code" type="text" placeholder="HAVE A CODE? ENTER IT HERE" style="width:100%; background:#0a0c20; border:3px solid #555; color:#f0f0f0; font-family:'Press Start 2P',monospace; font-size:0.45rem; padding:16px; margin-bottom:10px; outline:none; text-align:center; box-sizing:border-box;" onfocus="this.style.borderColor='#ffd700'" onblur="this.style.borderColor='#555'">
+      <button onclick="submitCode()" style="width:100%; background:#4cff91; color:#000; border:4px solid #000; font-family:'Press Start 2P',monospace; font-size:0.6rem; padding:17px; cursor:pointer; box-shadow:5px 5px 0 #000; margin-bottom:10px;">✅ UNLOCK WITH CODE</button>
+      <button onclick="window.open('https://buy.stripe.com/28E00j6UWcva1XFd7s3F601','_blank')" style="width:100%; background:#ffd700; color:#000; border:4px solid #000; font-family:'Press Start 2P',monospace; font-size:0.6rem; padding:17px; cursor:pointer; box-shadow:5px 5px 0 #000;">🛒 BUY FOR $5 — GET YOUR CODE</button>
     </div>
   </div>
 
@@ -295,10 +297,8 @@
     </div>
   </div>
 
-  <script src="https://js.stripe.com/v3/"></script>
   <script>
-    const STRIPE_KEY  = 'pk_live_51T5fGzFL7tsvyN9BhX3Tw2OPhJr0s6ibIG0JuKEONhxF9EFiV3WbUCBCIAIA5l2jbbXaQpcNyfJYEzhggdJsobWt00bgV6CU0z';
-    const WORKER_URL  = 'https://stealth-classroom-api.dibbleandseed.workers.dev';
+    const WORKER_URL = 'https://stealth-classroom-api.dibbleandseed.workers.dev';
 
     const themes = {
       ninja:  { bg: './apps/background.png',        mascot: './apps/ninja1.png',  banner: './apps/banner.png' },
@@ -354,83 +354,46 @@
       }, 200);
     }
 
-    // ── STRIPE ──────────────────────────────────────────
-    let stripe, elements;
-
+    // ── MODAL ──────────────────────────────────────────
     function openStripeModal(themeName) {
       if (themeName) previewTheme(themeName);
-      openModal();
-    }
-
-    async function openModal() {
       document.getElementById('stripe-modal').classList.add('open');
       document.getElementById('pay-msg').textContent = '';
-      document.getElementById('submit-pay').style.display = 'none';
-
-      if (elements) {
-        document.getElementById('submit-pay').style.display = 'block';
-        return;
-      }
-
-      setPayMsg('LOADING CHECKOUT...', 'ok');
-
-      try {
-        const res  = await fetch(`${WORKER_URL}/create-checkout`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: '' }),
-        });
-        const data = await res.json();
-        if (data.error) { setPayMsg('Error: ' + data.error, 'err'); return; }
-
-        stripe   = Stripe(STRIPE_KEY);
-        elements = stripe.elements({ clientSecret: data.clientSecret, appearance: stripeTheme() });
-        elements.create('payment').mount('#payment-element');
-        setPayMsg('', '');
-        document.getElementById('submit-pay').style.display = 'block';
-
-      } catch (e) {
-        setPayMsg('Connection error: ' + e.message, 'err');
-      }
+      if (document.getElementById('unlock-code')) document.getElementById('unlock-code').value = '';
     }
 
     function closeModal() {
       document.getElementById('stripe-modal').classList.remove('open');
     }
 
-    async function submitPayment() {
-      const btn = document.getElementById('submit-pay');
-      btn.disabled = true; btn.textContent = 'PROCESSING...';
-      setPayMsg('', '');
-
-      const { error } = await stripe.confirmPayment({
-        elements,
-        confirmParams: { return_url: `https://stealthclassroom.com/success` },
-      });
-
-      if (error) {
-        setPayMsg(error.message, 'err');
-        btn.disabled = false;
-        btn.textContent = '🔒 PAY $5 — UNLOCK THEMES';
-      }
+    function submitCode() {
+      const code = document.getElementById('unlock-code').value.trim().toUpperCase();
+      if (!code) { setPayMsg('ENTER YOUR CODE FIRST', 'err'); return; }
+      fetch(`${WORKER_URL}/verify-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.valid) {
+          localStorage.setItem('stealthclassroom_themesUnlocked', 'true');
+          setPayMsg('✅ THEMES UNLOCKED! RELOADING...', 'ok');
+          setTimeout(() => { closeModal(); location.reload(); }, 1500);
+        } else {
+          setPayMsg('❌ INVALID CODE — TRY AGAIN', 'err');
+        }
+      })
+      .catch(() => setPayMsg('CONNECTION ERROR — TRY AGAIN', 'err'));
     }
 
     function setPayMsg(msg, type) {
       const el = document.getElementById('pay-msg');
       el.textContent = msg;
-      el.className = type === 'err' ? 'pay-err' : 'pay-ok';
-    }
-
-    function stripeTheme() {
-      return {
-        theme: 'night',
-        variables: { colorPrimary: '#ffd700', colorBackground: '#0a0c20', colorText: '#f0f0f0', colorDanger: '#ff4444', fontFamily: '"Press Start 2P", monospace', spacingUnit: '4px', borderRadius: '0px' },
-        rules: {
-          '.Input': { border: '2px solid #ffd700', padding: '12px' },
-          '.Input:focus': { border: '2px solid #00e5ff' },
-          '.Label': { fontSize: '10px', letterSpacing: '1px' },
-        }
-      };
+      el.style.fontFamily = "'VT323', monospace";
+      el.style.fontSize = '1.2rem';
+      el.style.marginTop = '10px';
+      el.style.color = type === 'err' ? '#ff4444' : '#4cff91';
     }
 
     // Preload all theme images silently
