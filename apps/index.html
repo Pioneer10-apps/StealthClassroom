@@ -1283,7 +1283,7 @@
                     if (volume > currentThreshold) {
                         redTimer++;
                         bar.style.backgroundColor = "var(--red)";
-                        if (redTimer > 45) {  // 4.5 seconds sustained noise — ignores sudden bangs and dropped items
+                        if (redTimer > 25) {  // 2.5 seconds sustained noise
                             if (isBonusZone) {
                                 if (strikes < 3) {
                                     strikes++;
