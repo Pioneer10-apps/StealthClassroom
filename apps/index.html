@@ -269,8 +269,13 @@
             border: 4px solid var(--red);
         }
 
-        .action-container { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; align-items: stretch; width: 80%; align-self: center; }
-        #finishBtn { display: none; background-color: var(--green); border-color: var(--gold); }
+        .action-container { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; align-items: center; width: 80%; align-self: center; }
+        /* All solo buttons in the action container: fixed narrow width */
+        .action-container > button {
+            width: 260px;
+            max-width: 100%;
+        }
+        #finishBtn { display: none; background-color: var(--green); border-color: var(--gold); width: 260px; }
         #abortBtn { background-color: var(--red); border-color: var(--gold); font-size: 0.7rem; padding: 10px 20px; }
         #abortBtn:hover { border-color: var(--white); background-color: #d32f2f; }
         
@@ -282,33 +287,39 @@
         #recalibrateBtn { background-color: var(--ninja-navy); border-color: var(--gold); font-size: 0.7rem; padding: 10px 20px; }
         #recalibrateBtn:hover { border-color: var(--white); }
 
-        /* OVERRIDE BUTTONS — paired side by side with gap, same total width as other buttons */
+        /* OVERRIDE BUTTONS — paired side by side, equal width, centred gap */
         #restoreLifeBtn, #undoStrikesBtn {
             background-color: #5c3a92;
             border-color: var(--gold);
             font-size: 0.7rem;
             padding: 10px 0;
-            flex: 1;
+            flex: 1 1 0;
+            min-width: 0;
         }
         #restoreLifeBtn:hover, #undoStrikesBtn:hover { border-color: var(--white); background-color: #7b4fc4; }
 
         /* SPLIT PAUSE / ABORT BUTTON — same total width as other buttons */
         .split-btn-wrapper {
             display: flex;
-            width: 100%;
-            gap: 0;
+            width: 260px;
+            max-width: 100%;
+            gap: 6px;
+            justify-content: center;
         }
         .override-btn-wrapper {
             display: flex;
-            width: 100%;
-            gap: 0;
+            width: 260px;
+            max-width: 100%;
+            gap: 6px;
+            justify-content: center;
         }
         .split-btn {
-            flex: 1;
+            flex: 1 1 0;
             font-size: 0.7rem;
             padding: 10px 0;
             margin: 0;
             border-radius: 0;
+            min-width: 0;
         }
         .split-left {
             background-color: var(--ninja-navy);
@@ -350,6 +361,50 @@
             line-height: 1.4;
             margin: 0;
         }
+
+        /* REINSTATE WINDOW OVERLAY */
+        #reinstate-overlay {
+            display: none;
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(92, 58, 146, 0.95);
+            border: 4px solid var(--gold);
+            padding: 15px 20px;
+            z-index: 600;
+            text-align: center;
+            width: auto;
+            max-width: 340px;
+            box-shadow: 4px 4px 0px var(--ninja-dark-bg);
+        }
+        #reinstate-overlay h2 {
+            color: var(--gold);
+            text-shadow: 2px 2px #000;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+        }
+        #reinstate-overlay p {
+            color: var(--white);
+            font-size: 0.6rem;
+            line-height: 1.4;
+            margin: 0 0 10px 0;
+        }
+        #reinstate-countdown {
+            font-size: 1.4rem;
+            color: var(--gold);
+            text-shadow: 2px 2px #000;
+        }
+        #reinstateFullBtn {
+            margin-top: 10px;
+            width: 100%;
+            background-color: #5c3a92;
+            border-color: var(--gold);
+            font-size: 0.6rem;
+            padding: 10px;
+            animation: flash 0.6s infinite alternate;
+        }
+        #reinstateFullBtn:hover { background-color: #7b4fc4; border-color: var(--white); }
 
         .gold-heading { color: var(--gold); text-shadow: 3px 3px #000; margin-bottom: 30px; }
         #store-overlay .gold-heading { font-size: 2.5rem; }
@@ -403,7 +458,8 @@
 
             /* Ensure game action buttons fit side-by-side or stack neatly */
             .action-container { width: 100%; align-items: center; }
-            .action-container button { width: 85%; margin: 5px 0; }
+            .action-container > button { width: min(260px, 85%); margin: 5px 0; }
+            .split-btn-wrapper, .override-btn-wrapper { width: min(260px, 85%); }
         }
 
         @media only screen and (max-height: 600px) {
@@ -633,6 +689,13 @@
                 <p>Calibrating perfect silence.<br>8 seconds — mission starts automatically.</p>
             </div>
 
+            <div id="reinstate-overlay">
+                <h2>⚠️ LIVES LOST!</h2>
+                <p>Noise from outside? Tap below to fully restore progress before the rollback.</p>
+                <div id="reinstate-countdown">10</div>
+                <button id="reinstateFullBtn" onclick="reinstateFullProgress()">🔄 REINSTATE FULL PROGRESS</button>
+            </div>
+
             <div id="xp-lost-sign">XP LOST!</div>
             <div id="bonus-sign"> BONUS XP ZONE </div>
             <div id="progress-wrapper">
@@ -650,13 +713,11 @@
                 <button id="escapeBtn" onclick="escapeMission()">ESCAPE WITH XP</button>
                 <div class="override-btn-wrapper">
                     <button id="restoreLifeBtn" onclick="restoreOneLife()">❤️ +1 LIFE</button>
-                    <div style="width:6px;flex-shrink:0;"></div>
                     <button id="undoStrikesBtn" onclick="undoAllStrikes()">🔄 UNDO STRIKES</button>
                 </div>
                 <button id="recalibrateBtn" onclick="recalibrateMid()">RECALIBRATE</button>
                 <div class="split-btn-wrapper">
                     <button id="pauseBtn" class="split-btn split-left" onclick="togglePause()">PAUSE</button>
-                    <div style="width:6px;flex-shrink:0;"></div>
                     <button id="abortBtn" class="split-btn split-right" onclick="abortMission()">ABORT</button>
                 </div>
             </div>
@@ -1420,24 +1481,73 @@
             setTimeout(() => { xpText.style.color = '#fff'; }, 500);
         }
 
+        let savedTimeBeforeRollback = null;
+        let savedMinutesTrackedBeforeRollback = null;
+        let savedMinutesAtCheckpointBeforeRollback = null;
+        let reinstateTimer = null;
+        let reinstateSecondsLeft = 0;
+
         function triggerStrike() {
             strikes++;
             document.getElementById('hearts').innerHTML = heartIcons[strikes] || heartIcons[3];
             if (strikes >= 3) {
                 hasDied = true;
                 isPaused = true;
-                // Save position BEFORE rollback so Undo can restore it
+                // Save position BEFORE rollback so reinstate / undo can restore it
                 savedTimeBeforeRollback = elapsedSeconds;
                 savedMinutesTrackedBeforeRollback = minutesTracked;
                 savedMinutesAtCheckpointBeforeRollback = minutesAtLastCheckpoint;
-                setTimeout(() => {
-                    elapsedSeconds = (elapsedSeconds >= duration * 0.66) ? duration * 0.66 : (elapsedSeconds >= duration * 0.33) ? duration * 0.33 : 0;
-                    strikes = 0; isPaused = false;
-                    document.getElementById('hearts').innerHTML = heartIcons[0];
-                    minutesTracked = Math.floor(elapsedSeconds / 60);
-                    minutesAtLastCheckpoint = minutesTracked;
+
+                // Show reinstate overlay with 10-second countdown
+                reinstateSecondsLeft = 10;
+                const overlay = document.getElementById('reinstate-overlay');
+                const cdEl = document.getElementById('reinstate-countdown');
+                cdEl.innerText = reinstateSecondsLeft;
+                overlay.style.display = 'block';
+                clearInterval(reinstateTimer);
+                reinstateTimer = setInterval(() => {
+                    reinstateSecondsLeft--;
+                    cdEl.innerText = reinstateSecondsLeft;
+                    if (reinstateSecondsLeft <= 0) {
+                        closeReinstateOverlay();
+                        // Apply rollback then add back the 10 seconds spent waiting
+                        applyRollback();
+                        elapsedSeconds += 10;
+                    }
                 }, 1000);
             }
+        }
+
+        function closeReinstateOverlay() {
+            clearInterval(reinstateTimer);
+            reinstateTimer = null;
+            document.getElementById('reinstate-overlay').style.display = 'none';
+        }
+
+        function applyRollback() {
+            elapsedSeconds = (elapsedSeconds >= duration * 0.66) ? duration * 0.66 : (elapsedSeconds >= duration * 0.33) ? duration * 0.33 : 0;
+            strikes = 0; isPaused = false;
+            document.getElementById('hearts').innerHTML = heartIcons[0];
+            minutesTracked = Math.floor(elapsedSeconds / 60);
+            minutesAtLastCheckpoint = minutesTracked;
+        }
+
+        // Full reinstate: restore progress bar to exactly where it was before lives were lost
+        function reinstateFullProgress() {
+            closeReinstateOverlay();
+            if (savedTimeBeforeRollback !== null) {
+                elapsedSeconds = savedTimeBeforeRollback;
+                minutesTracked = savedMinutesTrackedBeforeRollback;
+                minutesAtLastCheckpoint = savedMinutesAtCheckpointBeforeRollback;
+                savedTimeBeforeRollback = null;
+                savedMinutesTrackedBeforeRollback = null;
+                savedMinutesAtCheckpointBeforeRollback = null;
+            }
+            strikes = 0;
+            redTimer = 0;
+            isPaused = false;
+            document.getElementById('hearts').innerHTML = heartIcons[0];
+            document.getElementById('pauseBtn').innerText = 'PAUSE';
         }
 
         // TEACHER OVERRIDE: restore one heart (max 3)
@@ -1448,12 +1558,9 @@
             }
         }
 
-        let savedTimeBeforeRollback = null;
-        let savedMinutesTrackedBeforeRollback = null;
-        let savedMinutesAtCheckpointBeforeRollback = null;
-
         // TEACHER OVERRIDE: wipe all strikes, restore full hearts, restore time if rolled back
         function undoAllStrikes() {
+            closeReinstateOverlay();
             if (savedTimeBeforeRollback !== null) {
                 elapsedSeconds = savedTimeBeforeRollback;
                 minutesTracked = savedMinutesTrackedBeforeRollback;
