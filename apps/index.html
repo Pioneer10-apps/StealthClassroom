@@ -226,7 +226,7 @@
             margin: 2px 0 10px 0; 
             line-height: 1; 
         }
-        .total-stat { color: var(--gold); font-size: 0.7rem; margin-top: 12px; }
+        .total-stat { color: var(--gold); font-size: 0.7rem; margin-top: 4px; }
 
         /* --- MISSION CENTER --- */
         #mission-center { gap: 20px; width: 100%; display: flex; flex-direction: column; align-items: center; position: relative; }
@@ -269,7 +269,7 @@
             border: 4px solid var(--red);
         }
 
-        .action-container { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
+        .action-container { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; align-items: stretch; width: 80%; align-self: center; }
         #finishBtn { display: none; background-color: var(--green); border-color: var(--gold); }
         #abortBtn { background-color: var(--red); border-color: var(--gold); font-size: 0.7rem; padding: 10px 20px; }
         #abortBtn:hover { border-color: var(--white); background-color: #d32f2f; }
@@ -281,6 +281,45 @@
         /* RECALIBRATE BUTTON */
         #recalibrateBtn { background-color: var(--ninja-navy); border-color: var(--gold); font-size: 0.7rem; padding: 10px 20px; }
         #recalibrateBtn:hover { border-color: var(--white); }
+
+        /* OVERRIDE BUTTONS — paired side by side with gap, same total width as other buttons */
+        #restoreLifeBtn, #undoStrikesBtn {
+            background-color: #5c3a92;
+            border-color: var(--gold);
+            font-size: 0.7rem;
+            padding: 10px 0;
+            flex: 1;
+        }
+        #restoreLifeBtn:hover, #undoStrikesBtn:hover { border-color: var(--white); background-color: #7b4fc4; }
+
+        /* SPLIT PAUSE / ABORT BUTTON — same total width as other buttons */
+        .split-btn-wrapper {
+            display: flex;
+            width: 100%;
+            gap: 0;
+        }
+        .override-btn-wrapper {
+            display: flex;
+            width: 100%;
+            gap: 0;
+        }
+        .split-btn {
+            flex: 1;
+            font-size: 0.7rem;
+            padding: 10px 0;
+            margin: 0;
+            border-radius: 0;
+        }
+        .split-left {
+            background-color: var(--ninja-navy);
+            border-color: var(--gold);
+        }
+        .split-left:hover { border-color: var(--white); }
+        .split-right {
+            background-color: var(--red);
+            border-color: var(--gold);
+        }
+        .split-right:hover { border-color: var(--white); background-color: #d32f2f; }
         
         /* NEW CALIBRATION OVERLAY ON GAME SCREEN */
         #calibration-overlay-game {
@@ -609,9 +648,17 @@
             <div class="action-container">
                 <button id="finishBtn" onclick="endSession()">CLAIM XP & FINISH</button>
                 <button id="escapeBtn" onclick="escapeMission()">ESCAPE WITH XP</button>
-                <button id="pauseBtn" onclick="togglePause()">PAUSE</button>
+                <div class="override-btn-wrapper">
+                    <button id="restoreLifeBtn" onclick="restoreOneLife()">❤️ +1 LIFE</button>
+                    <div style="width:6px;flex-shrink:0;"></div>
+                    <button id="undoStrikesBtn" onclick="undoAllStrikes()">🔄 UNDO STRIKES</button>
+                </div>
                 <button id="recalibrateBtn" onclick="recalibrateMid()">RECALIBRATE</button>
-                <button id="abortBtn" onclick="abortMission()">ABORT MISSION</button>
+                <div class="split-btn-wrapper">
+                    <button id="pauseBtn" class="split-btn split-left" onclick="togglePause()">PAUSE</button>
+                    <div style="width:6px;flex-shrink:0;"></div>
+                    <button id="abortBtn" class="split-btn split-right" onclick="abortMission()">ABORT</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1377,8 +1424,12 @@
             strikes++;
             document.getElementById('hearts').innerHTML = heartIcons[strikes] || heartIcons[3];
             if (strikes >= 3) {
-                hasDied = true; // Mark as failed perfect run
+                hasDied = true;
                 isPaused = true;
+                // Save position BEFORE rollback so Undo can restore it
+                savedTimeBeforeRollback = elapsedSeconds;
+                savedMinutesTrackedBeforeRollback = minutesTracked;
+                savedMinutesAtCheckpointBeforeRollback = minutesAtLastCheckpoint;
                 setTimeout(() => {
                     elapsedSeconds = (elapsedSeconds >= duration * 0.66) ? duration * 0.66 : (elapsedSeconds >= duration * 0.33) ? duration * 0.33 : 0;
                     strikes = 0; isPaused = false;
@@ -1387,6 +1438,35 @@
                     minutesAtLastCheckpoint = minutesTracked;
                 }, 1000);
             }
+        }
+
+        // TEACHER OVERRIDE: restore one heart (max 3)
+        function restoreOneLife() {
+            if (strikes > 0) {
+                strikes--;
+                document.getElementById('hearts').innerHTML = heartIcons[strikes] || heartIcons[0];
+            }
+        }
+
+        let savedTimeBeforeRollback = null;
+        let savedMinutesTrackedBeforeRollback = null;
+        let savedMinutesAtCheckpointBeforeRollback = null;
+
+        // TEACHER OVERRIDE: wipe all strikes, restore full hearts, restore time if rolled back
+        function undoAllStrikes() {
+            if (savedTimeBeforeRollback !== null) {
+                elapsedSeconds = savedTimeBeforeRollback;
+                minutesTracked = savedMinutesTrackedBeforeRollback;
+                minutesAtLastCheckpoint = savedMinutesAtCheckpointBeforeRollback;
+                savedTimeBeforeRollback = null;
+                savedMinutesTrackedBeforeRollback = null;
+                savedMinutesAtCheckpointBeforeRollback = null;
+            }
+            strikes = 0;
+            redTimer = 0;
+            isPaused = false;
+            document.getElementById('hearts').innerHTML = heartIcons[0];
+            document.getElementById('pauseBtn').innerText = 'PAUSE';
         }
 
         function togglePause() { isPaused = !isPaused; document.getElementById('pauseBtn').innerText = isPaused ? "RESUME" : "PAUSE"; }
