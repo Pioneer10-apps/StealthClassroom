@@ -406,6 +406,64 @@
         }
         #reinstateFullBtn:hover { background-color: #7b4fc4; border-color: var(--white); }
 
+        /* NOISY NINJA IDENTIFIER (inside the lives-lost overlay) */
+        #ninja-id-box {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 3px dashed var(--gold);
+        }
+        #ninja-id-box h3 {
+            color: var(--gold);
+            text-shadow: 2px 2px #000;
+            font-size: 0.7rem;
+            margin: 0 0 8px 0;
+            animation: flash 1s infinite;
+        }
+        #ninja-id-input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px;
+            margin-bottom: 8px;
+            font-family: var(--pixel-font);
+            font-size: 0.7rem;
+            letter-spacing: 3px;
+            text-align: center;
+            background: var(--ninja-dark-bg);
+            color: var(--white);
+            border: 3px solid var(--gold);
+            outline: none;
+            user-select: text;
+            -webkit-user-select: text;
+        }
+        #ninja-id-input:focus { border-color: var(--white); box-shadow: 0 0 10px var(--gold); }
+        #ninjaIdBtn {
+            width: 100%;
+            background-color: var(--ninja-navy);
+            border-color: var(--gold);
+            font-size: 0.6rem;
+            padding: 10px;
+        }
+        #ninja-id-done {
+            display: none;
+            color: var(--green);
+            font-size: 0.65rem;
+            line-height: 1.5;
+            text-shadow: 2px 2px #000;
+        }
+
+        /* RESULTS SCREEN: LUNCHTIME NOTICE */
+        #lunch-notice {
+            display: none;
+            margin: -20px 0 30px 0;
+            padding: 12px;
+            border: 3px dashed var(--gold);
+            background: rgba(0,0,0,0.5);
+        }
+        #lunch-notice .lunch-title { color: var(--gold); font-size: 1rem; text-shadow: 2px 2px #000; }
+        #lunch-notice .lunch-sub { color: var(--white); font-size: 0.6rem; margin-top: 8px; line-height: 1.5; }
+        #lunchRevealBtn { margin-top: 12px; font-size: 0.55rem; padding: 8px 12px; background-color: #5c3a92; }
+        #lunch-names { display: none; margin-top: 10px; color: var(--green); font-size: 0.8rem; line-height: 1.8; text-shadow: 2px 2px #000; }
+
         .gold-heading { color: var(--gold); text-shadow: 3px 3px #000; margin-bottom: 30px; }
         #store-overlay .gold-heading { font-size: 2.5rem; }
 
@@ -694,6 +752,15 @@
                 <p>Noise from outside? Tap below to fully restore progress before the rollback.</p>
                 <div id="reinstate-countdown">10</div>
                 <button id="reinstateFullBtn" onclick="reinstateFullProgress()">🔄 REINSTATE FULL PROGRESS</button>
+                <div id="ninja-id-box">
+                    <div id="ninja-id-form">
+                        <h3>IDENTIFYING NOISY NINJA</h3>
+                        <input type="password" id="ninja-id-input" maxlength="30" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Noisy ninja name"
+                               oninput="ninjaIdTyping()" onkeydown="if(event.key==='Enter'){event.preventDefault();submitNoisyNinja();}">
+                        <button id="ninjaIdBtn" onclick="submitNoisyNinja()">ENTER</button>
+                    </div>
+                    <div id="ninja-id-done">NINJA IDENTIFIED - CONSIDER LUNCH STEALTH PRACTICE.</div>
+                </div>
             </div>
 
             <div id="xp-lost-sign">XP LOST!</div>
@@ -729,6 +796,12 @@
             <h2 class="gold-heading">MISSION REPORT</h2>
             <div id="rank-display" style="font-size: 1.5rem; margin-bottom: 20px; color: var(--gold); text-shadow: 2px 2px #000;">RANK: WHITE BELT</div>
             <div id="typewriter-text" style="font-size: 1rem; line-height: 1.6; margin-bottom: 40px;"></div>
+            <div id="lunch-notice">
+                <div class="lunch-title">🥷 LUNCHTIME</div>
+                <div class="lunch-sub">STEALTH PRACTICE</div>
+                <button id="lunchRevealBtn" onclick="toggleLunchNames()">TEACHER: SHOW NAMES</button>
+                <div id="lunch-names"></div>
+            </div>
             
             <div class="action-container" style="flex-direction: column; align-items: center; gap: 15px; width: 100%;">
                 <button onclick="toggleLeaderboard(true)" style="width: 80%;">RANKINGS</button>
@@ -775,6 +848,8 @@
         // --- NEW VARIABLES FOR XP LOGIC & AUTO CALIBRATION ---
         let minutesAtLastCheckpoint = 0;
         let hasDied = false; 
+        let noisyNinjas = [];        // names entered by the teacher this session
+        let reinstateWaitTicks = 0;  // seconds actually spent in the lives-lost window
         let currentThemeName = "ninja"; 
         let isCalibrating = false;
 
@@ -1216,6 +1291,7 @@
             minutesTracked = 0;
             minutesAtLastCheckpoint = 0;
             hasDied = false;
+            noisyNinjas = [];
 
             document.getElementById('total-xp-val').innerText = history.totalXP;
             document.getElementById('streak-val').innerText = history.streak;
@@ -1500,22 +1576,83 @@
 
                 // Show reinstate overlay with 10-second countdown
                 reinstateSecondsLeft = 10;
+                reinstateWaitTicks = 0;
+                resetNinjaIdBox();
                 const overlay = document.getElementById('reinstate-overlay');
                 const cdEl = document.getElementById('reinstate-countdown');
                 cdEl.innerText = reinstateSecondsLeft;
                 overlay.style.display = 'block';
+                setTimeout(() => { const ni = document.getElementById('ninja-id-input'); if (ni) ni.focus(); }, 50);
                 clearInterval(reinstateTimer);
                 reinstateTimer = setInterval(() => {
                     reinstateSecondsLeft--;
+                    reinstateWaitTicks++;
                     cdEl.innerText = reinstateSecondsLeft;
                     if (reinstateSecondsLeft <= 0) {
                         closeReinstateOverlay();
-                        // Apply rollback then add back the 10 seconds spent waiting
+                        // Apply rollback then add back the seconds spent waiting
                         applyRollback();
-                        elapsedSeconds += 10;
+                        elapsedSeconds += reinstateWaitTicks;
                     }
                 }, 1000);
             }
+        }
+
+        // --- NOISY NINJA IDENTIFIER ---
+        function resetNinjaIdBox() {
+            document.getElementById('ninja-id-input').value = '';
+            document.getElementById('ninja-id-form').style.display = 'block';
+            document.getElementById('ninja-id-done').style.display = 'none';
+        }
+
+        // Typing buys the teacher a little extra time so the window can't close mid-name
+        function ninjaIdTyping() {
+            if (reinstateTimer && reinstateSecondsLeft < 5) {
+                reinstateSecondsLeft = 5;
+                document.getElementById('reinstate-countdown').innerText = reinstateSecondsLeft;
+            }
+        }
+
+        function submitNoisyNinja() {
+            const input = document.getElementById('ninja-id-input');
+            const name = input.value.trim();
+            if (!name) return;
+            noisyNinjas.push(name);
+            input.value = ''; // wipe it straight away so nothing lingers
+            document.getElementById('ninja-id-form').style.display = 'none';
+            document.getElementById('ninja-id-done').style.display = 'block';
+            input.blur();
+            // Make sure the class has time to read the confirmation
+            if (reinstateTimer && reinstateSecondsLeft < 3) {
+                reinstateSecondsLeft = 3;
+                document.getElementById('reinstate-countdown').innerText = reinstateSecondsLeft;
+            }
+        }
+
+        function renderLunchNotice() {
+            const box = document.getElementById('lunch-notice');
+            const namesEl = document.getElementById('lunch-names');
+            const btn = document.getElementById('lunchRevealBtn');
+            namesEl.style.display = 'none';
+            btn.innerText = 'TEACHER: SHOW NAMES';
+            if (noisyNinjas.length === 0) { box.style.display = 'none'; return; }
+            const counts = {};
+            noisyNinjas.forEach(n => { const k = n.toUpperCase(); counts[k] = (counts[k] || 0) + 1; });
+            namesEl.innerHTML = '';
+            Object.keys(counts).forEach(k => {
+                const line = document.createElement('div');
+                line.textContent = counts[k] > 1 ? `${k} (x${counts[k]})` : k;
+                namesEl.appendChild(line);
+            });
+            box.style.display = 'block';
+        }
+
+        function toggleLunchNames() {
+            const namesEl = document.getElementById('lunch-names');
+            const btn = document.getElementById('lunchRevealBtn');
+            const show = namesEl.style.display === 'none';
+            namesEl.style.display = show ? 'block' : 'none';
+            btn.innerText = show ? 'HIDE NAMES' : 'TEACHER: SHOW NAMES';
         }
 
         function closeReinstateOverlay() {
@@ -1686,6 +1823,7 @@
             } else { rankDisplay.classList.remove('rank-up-active'); }
 
             document.getElementById('typewriter-text').innerText = missionMessage;
+            renderLunchNotice();
         }
 
         function toggleBriefing(show) { document.getElementById('briefing-overlay').style.display = show ? 'flex' : 'none'; }
